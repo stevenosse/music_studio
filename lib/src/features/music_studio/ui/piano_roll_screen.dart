@@ -48,6 +48,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
   bool _isUpdatingVerticalScroll = false;
   bool _isUpdatingPianoScroll = false;
   final FocusNode _focusNode = FocusNode();
+  VoidCallback? _playbackListener;
 
   @override
   void initState() {
@@ -55,7 +56,21 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       _setupScrollControllers();
+      _setupPlaybackListener();
     });
+  }
+
+  void _setupPlaybackListener() {
+    final musicStudioNotifier = context.read<MusicStudioNotifier>();
+    final pianoRollNotifier = context.read<PianoRollNotifier>();
+
+    _playbackListener = () {
+      if (!mounted) return;
+      final playheadPosition = musicStudioNotifier.value.currentStep.toDouble();
+      pianoRollNotifier.setPlayheadPosition(playheadPosition);
+    };
+
+    musicStudioNotifier.addListener(_playbackListener!);
   }
 
   void _setupScrollControllers() {
@@ -120,6 +135,9 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
     _horizontalScrollController.dispose();
     _verticalScrollController.dispose();
     _pianoScrollController.dispose();
+    if (_playbackListener != null) {
+      locator<MusicStudioNotifier>().removeListener(_playbackListener!);
+    }
     _focusNode.dispose();
     super.dispose();
   }
@@ -129,10 +147,10 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
     final l10n = I18n.of(context);
 
     return Consumer2<MusicStudioNotifier, PianoRollNotifier>(
-      builder: (context, musicStudioNotifierFromBuilder, pianoRollNotifier, child) { // Renamed first arg
-        // Use context.watch to get the latest MusicStudioNotifier state
+      builder:
+          (context, musicStudioNotifierFromBuilder, pianoRollNotifier, child) {
         final musicStudioNotifier = context.watch<MusicStudioNotifier>();
-        final currentMusicValue = musicStudioNotifier.value; // Get the current value from the watched notifier
+        final currentMusicValue = musicStudioNotifier.value;
         final pianoRollState = pianoRollNotifier.value;
 
         if (widget.trackIndex >= currentMusicValue.tracks.length) {
@@ -146,10 +164,6 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
             ),
           );
         }
-
-        // final track = musicState.tracks[widget.trackIndex];
-        // final notes = track.notes;
-        // Let's use currentMusicValue directly
         final track = currentMusicValue.tracks[widget.trackIndex];
         final notes = track.notes;
 
@@ -212,7 +226,8 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
                                     _deleteNote(musicStudioNotifier, noteId),
                                 onNotesSelected: (noteIds,
                                         {addToSelection = false}) =>
-                                    pianoRollNotifier.selectMultipleNotes(noteIds,
+                                    pianoRollNotifier.selectMultipleNotes(
+                                        noteIds,
                                         addToSelection: addToSelection),
                                 onMultipleNotesUpdated: (updatedNotes) {
                                   for (final note in updatedNotes) {
@@ -242,18 +257,6 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
                     ],
                   ),
                 ),
-
-                // Note properties panel (if notes are selected)
-                // TODO: show select note
-                // if (pianoRollNotifier.hasSelectedNotes())
-                //   PianoRollNotePropertiesWidget(
-                //     selectedNotes: notes
-                //         .where((note) =>
-                //             pianoRollState.selectedNotes.contains(note.id))
-                //         .toList(),
-                //     onNoteUpdated: (oldNote, newNote) =>
-                //         _updateNote(musicStudioNotifier, newNote),
-                //   ),
               ],
             ),
           ),
@@ -430,7 +433,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
   void _createNote(MusicStudioNotifier musicStudioNotifier, Note note) {
     // Ensure the note has the correct track index
     final noteWithCorrectTrack = note.copyWith(trackIndex: widget.trackIndex);
-    
+
     // Add the note to the track
     musicStudioNotifier.addNote(noteWithCorrectTrack);
 
