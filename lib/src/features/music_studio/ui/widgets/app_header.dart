@@ -5,6 +5,7 @@ import 'package:mstudio/src/features/music_studio/logic/music_studio_notifier.da
 import 'package:mstudio/src/features/music_studio/logic/music_studio_state.dart';
 import 'package:provider/provider.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
+import 'control_button.dart';
 
 class AppHeader extends StatelessWidget {
   const AppHeader({super.key});
@@ -53,31 +54,29 @@ class AppHeader extends StatelessWidget {
           ),
 
           // Center section with main controls
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                BpmControlWidget(notifier: notifier, state: state),
-                const SizedBox(width: Dimens.spacingLarge),
-                TransportControlsWidget(notifier: notifier, state: state),
-                const SizedBox(width: Dimens.spacingMedium),
-                _buildToggleButton(
-                  icon: state.isLooping ? IconsaxPlusBold.repeate_one : IconsaxPlusLinear.repeate_one,
-                  tooltip: 'Toggle Loop',
-                  onPressed: notifier.toggleLooping,
-                  isActive: state.isLooping,
-                  context: context,
-                ),
-                _buildToggleButton(
-                  icon: state.isMetronomeEnabled ? IconsaxPlusBold.volume_high : IconsaxPlusLinear.volume_slash,
-                  tooltip: 'Toggle Metronome',
-                  onPressed: notifier.toggleMetronome,
-                  isActive: state.isMetronomeEnabled,
-                  context: context,
-                ),
-              ],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              BpmControlWidget(notifier: notifier, state: state),
+              const SizedBox(width: Dimens.spacingLarge),
+              TransportControlsWidget(notifier: notifier, state: state),
+              const SizedBox(width: Dimens.spacingMedium),
+              ControlButton(
+                icon: state.isLooping ? IconsaxPlusBold.repeate_one : IconsaxPlusLinear.repeate_one,
+                label: 'Loop',
+                isActive: state.isLooping,
+                activeColor: Theme.of(context).colorScheme.primary,
+                onTap: notifier.toggleLooping,
+              ),
+              const SizedBox(width: Dimens.spacingMedium),
+              ControlButton(
+                icon: state.isMetronomeEnabled ? IconsaxPlusBold.volume_high : IconsaxPlusLinear.volume_slash,
+                label: 'Metronome',
+                isActive: state.isMetronomeEnabled,
+                activeColor: Theme.of(context).colorScheme.primary,
+                onTap: notifier.toggleMetronome,
+              ),
+            ],
           ),
 
           // Right section with project actions and window controls
@@ -99,24 +98,7 @@ class AppHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildToggleButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onPressed,
-    required bool isActive,
-    required BuildContext context,
-  }) {
-    final theme = Theme.of(context);
-    return IconButton(
-      icon: Icon(icon),
-      tooltip: tooltip,
-      onPressed: onPressed,
-      color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-      iconSize: Dimens.iconSizeM,
-      padding: const EdgeInsets.all(Dimens.paddingSmall),
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-    );
-  }
+
 }
 
 class BpmControlWidget extends StatelessWidget {

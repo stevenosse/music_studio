@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/dimens.dart';
 import '../../logic/music_studio_notifier.dart';
+import 'control_button.dart';
 
 class TransportControlsWidget extends StatelessWidget {
   const TransportControlsWidget({super.key});
@@ -26,56 +27,40 @@ class TransportControlsWidget extends StatelessWidget {
           child: Row(
             children: [
               // Play/Pause Button
-              IconButton(
-                onPressed: () async {
+              ControlButton(
+                icon: state.isPlaying ? IconsaxPlusLinear.pause : IconsaxPlusLinear.play,
+                label: state.isPlaying ? 'Pause' : 'Play',
+                isActive: state.isPlaying,
+                activeColor: Theme.of(context).colorScheme.primary,
+                onTap: () async {
                   if (state.isPlaying) {
                     await notifier.pause();
                   } else {
                     notifier.play();
                   }
                 },
-                icon: Icon(
-                  state.isPlaying ? IconsaxPlusLinear.pause : IconsaxPlusLinear.play,
-                  size: Dimens.iconSizeLarge,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: state.isPlaying 
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.surfaceContainerHigh,
-                  foregroundColor: state.isPlaying 
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
               ),
               
               SizedBox(width: Dimens.spacingSmall),
               
               // Stop Button
-              IconButton(
-                onPressed: notifier.stop,
-                icon: Icon(
-                  IconsaxPlusLinear.stop,
-                  size: Dimens.iconSizeM,
-                ),
+              ControlButton(
+                icon: IconsaxPlusLinear.stop,
+                label: 'Stop',
+                isActive: false,
+                activeColor: Theme.of(context).colorScheme.primary,
+                onTap: notifier.stop,
               ),
               
               SizedBox(width: Dimens.spacingSmall),
               
               // Record Button
-              IconButton(
-                onPressed: () => notifier.record(),
-                icon: Icon(
-                  IconsaxPlusLinear.record,
-                  size: Dimens.iconSizeM,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: state.isRecording 
-                      ? Colors.red
-                      : Theme.of(context).colorScheme.surfaceContainerHigh,
-                  foregroundColor: state.isRecording 
-                      ? Colors.white
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
+              ControlButton(
+                icon: IconsaxPlusLinear.record,
+                label: 'Record',
+                isActive: state.isRecording,
+                activeColor: Colors.red,
+                onTap: () => notifier.record(),
               ),
               
               SizedBox(width: Dimens.spacingLarge),

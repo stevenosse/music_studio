@@ -1,16 +1,16 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
-import 'package:mstudio/src/core/routing/app_router.dart';
-import 'package:mstudio/src/features/music_studio/logic/music_studio_state.dart';
 
 import 'package:collection/collection.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/dimens.dart';
 import '../../logic/music_studio_notifier.dart';
+import '../../logic/music_studio_state.dart';
 
 import 'sample_pack_explorer_widget.dart';
+import 'step_sequencer_header.dart';
+import 'control_button.dart';
 
 class StepSequencerWidget extends StatefulWidget {
   const StepSequencerWidget({super.key});
@@ -39,7 +39,15 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header with step numbers and sample pack explorer button
-                    _buildHeader(context, state),
+                    StepSequencerHeader(
+                      state: state,
+                      onToggleSamplePackExplorer: (show) {
+                        setState(() {
+                          _showSamplePackExplorer = show;
+                        });
+                      },
+                      showSamplePackExplorer: _showSamplePackExplorer,
+                    ),
 
                     const SizedBox(height: 4),
 
@@ -48,8 +56,7 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
                       child: ListView.builder(
                         itemCount: state.tracks.length,
                         itemBuilder: (context, trackIndex) {
-                          return _buildTrackRow(
-                              context, notifier, state, trackIndex);
+                          return _buildTrackRow(context, notifier, state, trackIndex);
                         },
                         itemExtent: 110,
                       ),
@@ -68,10 +75,7 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
                       color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .outline
-                            .withValues(alpha: 0.2),
+                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                       ),
                     ),
                     child: SamplePackExplorerWidget(
@@ -94,146 +98,6 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, MusicStudioState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Step Sequencer',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const Spacer(),
-            OutlinedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _showSamplePackExplorer = !_showSamplePackExplorer;
-                });
-              },
-              icon: Icon(
-                _showSamplePackExplorer
-                    ? IconsaxPlusBold.close_circle
-                    : IconsaxPlusBold.music_library_2,
-                size: 18,
-              ),
-              label: Text(_showSamplePackExplorer ? 'Close' : 'Sample Packs'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _showSamplePackExplorer
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.primary,
-                side: BorderSide(
-                  color: _showSamplePackExplorer
-                      ? Theme.of(context)
-                          .colorScheme
-                          .error
-                          .withValues(alpha: 0.5)
-                      : Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: Dimens.spacingMedium),
-        _buildStepRuler(context, state),
-      ],
-    );
-  }
-
-  Widget _buildStepRuler(BuildContext context, MusicStudioState state) {
-    return Container(
-      height: 30,
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-            width: 1.5,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Track name column spacer
-          const SizedBox(width: 150), // Increased width for track controls
-
-          // Step numbers
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: List.generate(32, (index) {
-                  final isCurrentStep =
-                      index == state.currentStep && state.isPlaying;
-                  final isBarStart = index % 4 == 0;
-                  final isBeatStart =
-                      index % 4 != 0 && index % 2 == 0; // e.g. 2, 6, 10...
-
-                  return Container(
-                    width: 24,
-                    decoration: BoxDecoration(
-                      border: Border(
-                        left: BorderSide(
-                          color: isBarStart
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.4)
-                              : isBeatStart
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.2)
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.1),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        if (isCurrentStep)
-                          Container(
-                            width: double.infinity,
-                            height: double.infinity,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.3),
-                          ),
-                        if (isBarStart)
-                          Center(
-                            child: Text(
-                              (index ~/ 4 + 1).toString(),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Color _getStepColor(BuildContext context, bool isCurrentStep, int stepIndex) {
     if (isCurrentStep) {
       return Theme.of(context).colorScheme.primary.withValues(alpha: 51);
@@ -244,45 +108,8 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
         : Theme.of(context).colorScheme.surface.withValues(alpha: 102);
   }
 
-  Widget _buildControlButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required Color activeColor,
-    required VoidCallback onTap,
-  }) {
-    final color = isActive
-        ? activeColor
-        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 153);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(Dimens.radiusSmall),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color:
-              isActive ? activeColor.withValues(alpha: 26) : Colors.transparent,
-          borderRadius: BorderRadius.circular(Dimens.radiusSmall),
-          border: Border.all(
-            color: isActive
-                ? activeColor.withValues(alpha: 77)
-                : Theme.of(context).colorScheme.outline.withValues(alpha: 51),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(label, style: Theme.of(context).textTheme.labelMedium),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStep(BuildContext context, MusicStudioNotifier notifier,
-      MusicStudioState state, int trackIndex, int stepIndex) {
+  Widget _buildStep(
+      BuildContext context, MusicStudioNotifier notifier, MusicStudioState state, int trackIndex, int stepIndex) {
     final track = state.tracks[trackIndex];
     final note = track.notes.firstWhereOrNull(
       (n) => n.step == stepIndex,
@@ -301,21 +128,18 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
           color: _getStepColor(context, isCurrentStep, stepIndex),
           border: Border(
             left: BorderSide(
-              color:
-                  Theme.of(context).colorScheme.outline.withValues(alpha: 26),
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 26),
               width: 0.5,
             ),
             right: BorderSide(
-              color:
-                  Theme.of(context).colorScheme.outline.withValues(alpha: 26),
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 26),
               width: 0.5,
             ),
           ),
         ),
         child: isActive
             ? Container(
-                margin:
-                    const EdgeInsets.symmetric(vertical: 2.0, horizontal: 2.0),
+                margin: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 2.0),
                 decoration: BoxDecoration(
                   color: track.color,
                   borderRadius: BorderRadius.circular(4),
@@ -337,8 +161,7 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
     );
   }
 
-  Widget _buildTrackRow(BuildContext context, MusicStudioNotifier notifier,
-      MusicStudioState state, int trackIndex) {
+  Widget _buildTrackRow(BuildContext context, MusicStudioNotifier notifier, MusicStudioState state, int trackIndex) {
     final track = state.tracks[trackIndex];
     final isSelected = trackIndex == state.selectedTrackIndex;
 
@@ -348,14 +171,10 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
         margin: const EdgeInsets.only(bottom: 4),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         decoration: BoxDecoration(
-          color: isSelected
-              ? track.color.withValues(alpha: 38)
-              : Colors.transparent,
+          color: isSelected ? track.color.withValues(alpha: 38) : Colors.transparent,
           borderRadius: BorderRadius.circular(Dimens.radiusMedium),
           border: Border.all(
-            color: isSelected
-                ? track.color.withValues(alpha: 128)
-                : Colors.transparent,
+            color: isSelected ? track.color.withValues(alpha: 128) : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -375,29 +194,11 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
                         Expanded(
                           child: Text(
                             track.name,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: isSelected
-                                      ? track.color
-                                      : Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                             overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () => context.router
-                              .push(PianoRollRoute(trackIndex: trackIndex)),
-                          borderRadius: BorderRadius.circular(4),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Icon(
-                              IconsaxPlusLinear.music_dashboard,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
                           ),
                         ),
                       ],
@@ -409,22 +210,22 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildControlButton(
-                        context,
+                      ControlButton(
                         icon: IconsaxPlusBold.volume_slash,
                         label: 'Mute',
                         isActive: track.isMuted,
                         activeColor: Colors.redAccent,
                         onTap: () => notifier.toggleTrackMute(trackIndex),
                       ),
-                      _buildControlButton(
-                        context,
+
+                      ControlButton(
                         icon: IconsaxPlusBold.headphone,
                         label: 'Solo',
                         isActive: track.isSolo,
                         activeColor: Colors.orangeAccent,
                         onTap: () => notifier.toggleTrackSolo(trackIndex),
                       ),
+
                     ],
                   ),
 
@@ -436,10 +237,8 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
                     child: SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         trackHeight: 2,
-                        thumbShape:
-                            const RoundSliderThumbShape(enabledThumbRadius: 6),
-                        overlayShape:
-                            const RoundSliderOverlayShape(overlayRadius: 12),
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                         activeTrackColor: track.color,
                         inactiveTrackColor: track.color.withValues(alpha: 77),
                         thumbColor: track.color,
@@ -462,8 +261,7 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: List.generate(32, (stepIndex) {
-                    return _buildStep(
-                        context, notifier, state, trackIndex, stepIndex);
+                    return _buildStep(context, notifier, state, trackIndex, stepIndex);
                   }),
                 ),
               ),
