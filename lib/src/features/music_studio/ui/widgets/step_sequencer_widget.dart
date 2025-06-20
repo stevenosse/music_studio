@@ -1,7 +1,10 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import 'package:collection/collection.dart';
+import 'package:mstudio/src/core/routing/app_router.dart';
+import 'package:mstudio/src/core/widgets/linked_scroll_controller.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/dimens.dart';
@@ -21,6 +24,21 @@ class StepSequencerWidget extends StatefulWidget {
 
 class _StepSequencerWidgetState extends State<StepSequencerWidget> {
   bool _showSamplePackExplorer = false;
+  late LinkedScrollControllerGroup _horizontalScrollControllerGroup;
+  late ScrollController _rulerScrollController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _horizontalScrollControllerGroup = LinkedScrollControllerGroup();
+    _rulerScrollController = _horizontalScrollControllerGroup.addAndGet();
+  }
+  
+  @override
+  void dispose() {
+    _horizontalScrollControllerGroup.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +62,7 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
                       });
                     },
                     showSamplePackExplorer: _showSamplePackExplorer,
+                    scrollController: _rulerScrollController,
                   ),
 
                   const SizedBox(height: 4),
@@ -57,6 +76,7 @@ class _StepSequencerWidgetState extends State<StepSequencerWidget> {
                           notifier: notifier,
                           state: state,
                           trackIndex: trackIndex,
+                          scrollController: _horizontalScrollControllerGroup.addAndGet(),
                         );
                       },
                       itemExtent: 110,
@@ -102,12 +122,14 @@ class TrackRow extends StatelessWidget {
   final MusicStudioNotifier notifier;
   final MusicStudioState state;
   final int trackIndex;
+  final ScrollController scrollController;
 
   const TrackRow({
     super.key,
     required this.notifier,
     required this.state,
     required this.trackIndex,
+    required this.scrollController,
   });
 
   @override
@@ -139,13 +161,37 @@ class TrackRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Track name and piano roll button
-                    Text(
-                      track.name,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            track.name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge
+                                ?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.piano,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          onPressed: () {
+                            // Navigate to Piano Roll
+                            context.router.push(PianoRollRoute(trackIndex: trackIndex));
+                          },
+                          iconSize: 16,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 24,
+                            minHeight: 24,
+                          ),
+                          tooltip: 'Open Piano Roll',
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
 
@@ -213,9 +259,10 @@ class TrackRow extends StatelessWidget {
             Expanded(
               flex: 12,
               child: SingleChildScrollView(
+                controller: scrollController,
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: List.generate(32, (stepIndex) {
+                  children: List.generate(state.bars * 16, (stepIndex) {
                     return SequencerStep(
                       notifier: notifier,
                       state: state,

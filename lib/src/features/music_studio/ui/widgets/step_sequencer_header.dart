@@ -8,12 +8,14 @@ class StepSequencerHeader extends StatelessWidget {
   final MusicStudioState state;
   final ValueChanged<bool> onToggleSamplePackExplorer;
   final bool showSamplePackExplorer;
+  final ScrollController scrollController;
 
   const StepSequencerHeader({
     super.key,
     required this.state,
     required this.onToggleSamplePackExplorer,
     required this.showSamplePackExplorer,
+    required this.scrollController,
   });
 
   @override
@@ -64,7 +66,7 @@ class StepSequencerHeader extends StatelessWidget {
         // _buildStepRuler will be refactored into a separate widget
         // For now, we'll keep it as a method call within the main widget
         // and pass the state.
-        _StepRuler(state: state),
+        _StepRuler(state: state, scrollController: scrollController),
       ],
     );
   }
@@ -72,9 +74,11 @@ class StepSequencerHeader extends StatelessWidget {
 
 class _StepRuler extends StatelessWidget {
   final MusicStudioState state;
+  final ScrollController scrollController;
 
   const _StepRuler({
     required this.state,
+    required this.scrollController,
   });
 
   @override
@@ -97,9 +101,10 @@ class _StepRuler extends StatelessWidget {
           // Step numbers
           Expanded(
             child: SingleChildScrollView(
+              controller: scrollController,
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: List.generate(32, (index) {
+                children: List.generate(state.bars * 16, (index) {
                   final isCurrentStep = index == state.currentStep && state.isPlaying;
                   final isBarStart = index % 4 == 0;
                   final isBeatStart = index % 4 != 0 && index % 2 == 0;
