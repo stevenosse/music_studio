@@ -28,7 +28,7 @@ class TransportControlsWidget extends StatelessWidget {
             children: [
               // Play/Pause Button
               ControlButton(
-                icon: state.isPlaying ? IconsaxPlusLinear.pause : IconsaxPlusLinear.play,
+                icon: state.isPlaying ? Icons.pause : Icons.play_arrow,
                 label: state.isPlaying ? 'Pause' : 'Play',
                 isActive: state.isPlaying,
                 activeColor: Theme.of(context).colorScheme.primary,
@@ -45,7 +45,7 @@ class TransportControlsWidget extends StatelessWidget {
               
               // Stop Button
               ControlButton(
-                icon: IconsaxPlusLinear.stop,
+                icon: Icons.stop,
                 label: 'Stop',
                 isActive: false,
                 activeColor: Theme.of(context).colorScheme.primary,
@@ -56,7 +56,7 @@ class TransportControlsWidget extends StatelessWidget {
               
               // Record Button
               ControlButton(
-                icon: IconsaxPlusLinear.record,
+                icon: Icons.record_voice_over,
                 label: 'Record',
                 isActive: state.isRecording,
                 activeColor: Colors.red,

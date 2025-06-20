@@ -202,7 +202,7 @@ class TransportControlsWidget extends StatelessWidget {
           // Play/Pause button in the center for better prominence
           IconButton(
             icon: Icon(
-              state.isPlaying ? IconsaxPlusBold.pause_circle : IconsaxPlusBold.play_circle,
+              state.isPlaying ? Icons.pause : Icons.play_arrow,
               color: theme.colorScheme.primary,
             ),
             tooltip: state.isPlaying ? 'Pause' : 'Play',
@@ -220,7 +220,7 @@ class TransportControlsWidget extends StatelessWidget {
           // Record button
           IconButton(
             icon: Icon(
-              IconsaxPlusBold.record,
+              Icons.record_voice_over,
               color: state.isRecording ? Colors.redAccent : theme.colorScheme.onSurfaceVariant,
             ),
             tooltip: 'Record',
@@ -231,7 +231,7 @@ class TransportControlsWidget extends StatelessWidget {
           // Stop button
           IconButton(
             icon: Icon(
-              IconsaxPlusBold.stop,
+              Icons.stop,
               color: theme.colorScheme.onSurfaceVariant,
             ),
             tooltip: 'Stop',
