@@ -4,9 +4,8 @@ import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 
-import '../../../../../core/theme/dimens.dart';
 import '../../../logic/piano_roll/piano_roll_notifier.dart';
-import '../../../logic/piano_roll/note_drag_data.dart'; // Added import
+ // Added import
 import '../../../models/note.dart';
 import 'piano_roll_grid_painter.dart';
 import 'piano_roll_note_widget.dart';
@@ -31,7 +30,10 @@ class PianoRollGridWidget extends StatefulWidget {
     required this.onNoteUpdated,
     required this.onNoteDeleted,
     required this.onNotesSelected,
+    required this.onMultipleNotesUpdated,
   });
+
+  final Function(List<Note>) onMultipleNotesUpdated;
 
   @override
   State<PianoRollGridWidget> createState() => _PianoRollGridWidgetState();
@@ -136,16 +138,9 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
       child: PianoRollNoteWidget(
         note: note,
         isSelected: notifier.isNoteSelected(note.id),
-        onTap: () => _handleNoteTap(note, notifier),
-        onMove: (delta) => {}, // No-op: movement handled by unified drag system
         onResizeStart: (fromLeft, globalPosition) {
           _onNoteResizeGestureStart(note, globalPosition, fromLeft, notifier);
         },
-        onResize: (newDuration, fromLeft) => _handleNoteResize(
-            note,
-            newDuration,
-            fromLeft,
-            notifier), // Corrected: onResizeUpdate -> onResize
         onResizeEnd: () => _endNoteResize(),
         onDelete: () => widget.onNoteDeleted(note.id),
         cellWidth: notifier.cellWidth,
@@ -305,6 +300,8 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
     if (_resizingNote != null) {
       _endNoteResize();
     } else if (notifier.value.isDragging) {
+      // The final note positions are already committed by onMultipleNotesUpdated during pan updates.
+      // We just need to clear the dragging state.
       notifier.stopDragging();
     } else if (_isSelectionBoxActive) {
       // Finalize selection box
@@ -312,9 +309,49 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
     }
   }
 
-  void _handleNoteTap(Note note, PianoRollNotifier notifier) {
-    if (notifier.value.mode == PianoRollMode.select) {
-      notifier.toggleNoteSelection(note.id);
+  void _updateNoteDragging(Offset currentPosition, PianoRollNotifier notifier) {
+    final state = notifier.value;
+    if (!state.isDragging || state.dragStartPosition == null || state.dragStartNoteData == null) {
+      return;
+    }
+
+    final currentGridPos = notifier.screenToGrid(currentPosition);
+
+    // Calculate delta from the initial drag position
+    final startGridPos = state.dragStartPosition!;
+    final stepDelta = currentGridPos.step - startGridPos.dx;
+    final pitchDelta = currentGridPos.pitch - startGridPos.dy;
+
+    final updatedNotes = <Note>[];
+    final notesToUpdate = widget.notes.where((n) => state.selectedNotes.contains(n.id));
+
+    for (final noteToUpdate in notesToUpdate) {
+      final dragData = state.dragStartNoteData![noteToUpdate.id];
+      if (dragData == null) continue;
+
+      // Calculate new position
+      final newStepDouble = dragData.initialStep + stepDelta;
+      final newPitch = dragData.initialPitch + pitchDelta.round();
+
+      // Snap to grid
+      final snappedStep = notifier.snapToGrid(newStepDouble).round();
+
+      // Clamp values to be within grid bounds
+      final clampedPitch = newPitch.clamp(state.lowestNote, state.highestNote);
+      final clampedStep = snappedStep.clamp(0, state.totalSteps - noteToUpdate.duration);
+
+      // Create the updated note only if it has changed
+      if (clampedStep != noteToUpdate.step || clampedPitch != noteToUpdate.pitch) {
+        final updatedNote = noteToUpdate.copyWith(
+          step: clampedStep,
+          pitch: clampedPitch,
+        );
+        updatedNotes.add(updatedNote);
+      }
+    }
+
+    if (updatedNotes.isNotEmpty) {
+      widget.onMultipleNotesUpdated(updatedNotes);
     }
   }
 
@@ -339,22 +376,6 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
       _originalStepAtResizeStart = note.step;
       _originalDurationAtResizeStart = note.duration;
     });
-  }
-
-  void _handleNoteResize(Note note, double newDuration, bool fromLeft,
-      PianoRollNotifier notifier) {
-    final minDuration =
-        math.max(Dimens.pianoRollSnapTolerance, notifier.snapToGrid(0.25));
-    final maxDuration =
-        notifier.value.totalSteps.toDouble() - note.step.toDouble();
-
-    final snappedDuration =
-        notifier.snapToGrid(newDuration).clamp(minDuration, maxDuration);
-
-    if (snappedDuration.round() != note.duration) {
-      final updatedNote = note.copyWith(duration: snappedDuration.round());
-      widget.onNoteUpdated(updatedNote);
-    }
   }
 
   void _endNoteResize() {
@@ -424,68 +445,8 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
     }
   }
 
-  void _updateNoteDragging(
-      Offset currentGridPosition, PianoRollNotifier notifier) {
-    final Offset? dragStartGridPositionOffset =
-        notifier.value.dragStartPosition;
-    final Map<String, NoteDragData>? dragStartNoteData =
-        notifier.value.dragStartNoteData;
 
-    if (!notifier.value.isDragging ||
-        dragStartGridPositionOffset == null ||
-        dragStartNoteData == null ||
-        dragStartNoteData.isEmpty) {
-      return;
-    }
 
-    // Convert current screen position to grid coordinates
-    final GridPosition currentGridPos =
-        notifier.screenToGrid(currentGridPosition);
-
-    // Calculate total displacement in grid units
-    final double totalStepDelta =
-        currentGridPos.step - dragStartGridPositionOffset.dx;
-    final int totalPitchDelta =
-        currentGridPos.pitch - dragStartGridPositionOffset.dy.round();
-
-    for (final entry in dragStartNoteData.entries) {
-      final noteId = entry.key;
-      final initialDragData = entry.value;
-
-      final originalNote = widget.notes.firstWhereOrNull((n) => n.id == noteId);
-      if (originalNote == null) {
-        continue;
-      }
-
-      // Calculate new position based on the note's initial position and total delta
-      double newStepDouble = initialDragData.initialStep + totalStepDelta;
-      int newPitch = initialDragData.initialPitch + totalPitchDelta;
-
-      // Snap step to grid if enabled
-      if (notifier.value.isSnapEnabled &&
-          notifier.value.snapResolution != SnapResolution.none) {
-        newStepDouble = notifier.snapToGrid(newStepDouble);
-      }
-
-      int newSnappedStep = newStepDouble.round();
-
-      // Clamp pitch to valid range
-      newPitch =
-          newPitch.clamp(notifier.value.lowestNote, notifier.value.highestNote);
-
-      // Clamp step to prevent going out of bounds
-      newSnappedStep = newSnappedStep.clamp(
-          0, notifier.value.totalSteps - originalNote.duration);
-
-      // Only update if there's an actual change in step or pitch
-      if (newSnappedStep != originalNote.step ||
-          newPitch != originalNote.pitch) {
-        final updatedNote =
-            originalNote.copyWith(step: newSnappedStep, pitch: newPitch);
-        widget.onNoteUpdated(updatedNote);
-      }
-    }
-  }
 
   void _finalizeSelectionBox(PianoRollNotifier notifier) {
     if (_selectionBoxStart != null && _selectionBoxEnd != null) {

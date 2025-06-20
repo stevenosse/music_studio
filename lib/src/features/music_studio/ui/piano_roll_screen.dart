@@ -210,14 +210,20 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
                                     _updateNote(musicStudioNotifier, note),
                                 onNoteDeleted: (noteId) =>
                                     _deleteNote(musicStudioNotifier, noteId),
-                                onNotesSelected:
-                                    pianoRollNotifier.selectMultipleNotes,
+                                onNotesSelected: (noteIds,
+                                        {addToSelection = false}) =>
+                                    pianoRollNotifier.selectMultipleNotes(noteIds,
+                                        addToSelection: addToSelection),
+                                onMultipleNotesUpdated: (updatedNotes) {
+                                  for (final note in updatedNotes) {
+                                    _updateNote(musicStudioNotifier, note);
+                                  }
+                                },
                               ),
                             ),
                           ],
                         ),
                       ),
-
                       // Velocity editor (if enabled)
                       if (pianoRollState.showVelocityEditor)
                         SizedBox(

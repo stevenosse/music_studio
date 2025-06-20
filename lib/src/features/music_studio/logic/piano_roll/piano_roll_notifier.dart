@@ -27,20 +27,17 @@ class PianoRollNotifier extends ValueNotifier<PianoRollState> {
 
   // Convert screen position to grid coordinates
   GridPosition screenToGrid(Offset screenPosition) {
-    // Add scroll offsets to get absolute position in the grid
+    // Add scroll offsets to convert screen position to absolute position within the scrollable content
     final absoluteX = screenPosition.dx + value.horizontalScrollOffset;
     final absoluteY = screenPosition.dy + value.verticalScrollOffset;
-    
-    final stepPosition = absoluteX / cellWidth;
+
+    final step = absoluteX / cellWidth;
     final keyIndex = (absoluteY / keyHeight).floor();
-    // Calculate pitch from bottom up: lowestNote + offset from bottom
-    final pitch = value.lowestNote + (value.totalKeys - 1 - keyIndex);
-    
-    return GridPosition(
-      step: stepPosition,
-      pitch: pitch,
-      keyIndex: keyIndex,
-    );
+
+    // Calculate pitch from the top of the grid
+    final pitch = value.totalKeys - 1 - keyIndex + value.lowestNote;
+
+    return GridPosition(step: step, pitch: pitch, keyIndex: keyIndex);
   }
 
   // Convert grid coordinates to screen position
@@ -48,11 +45,8 @@ class PianoRollNotifier extends ValueNotifier<PianoRollState> {
     // Calculate keyIndex from bottom: reverse of pitch calculation
     final keyIndex = value.totalKeys - 1 - (pitch - value.lowestNote);
     // Convert grid coordinates to absolute position within the scrollable content
-    final absoluteX = step * cellWidth;
-    final absoluteY = keyIndex * keyHeight;
-    // Subtract scroll offsets to get screen position
-    final x = absoluteX - value.horizontalScrollOffset;
-    final y = absoluteY - value.verticalScrollOffset;
+    final x = step * cellWidth;
+    final y = keyIndex * keyHeight;
     return Offset(x, y);
   }
 

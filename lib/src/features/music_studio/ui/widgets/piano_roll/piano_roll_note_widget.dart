@@ -5,21 +5,15 @@ import '../../../models/note.dart';
 class PianoRollNoteWidget extends StatefulWidget {
   final Note note;
   final bool isSelected;
-  final VoidCallback onTap;
-  final Function(Offset) onMove;
-  final Function(double, bool) onResize;
   final VoidCallback onDelete;
   final double cellWidth;
-  final Function(bool, Offset) onResizeStart; // Updated signature
+  final Function(bool, Offset) onResizeStart;
   final VoidCallback onResizeEnd;
 
   const PianoRollNoteWidget({
     super.key,
     required this.note,
     required this.isSelected,
-    required this.onTap,
-    required this.onMove,
-    required this.onResize,
     required this.onDelete,
     required this.cellWidth,
     required this.onResizeStart,
@@ -32,11 +26,6 @@ class PianoRollNoteWidget extends StatefulWidget {
 
 class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
   bool _isHovering = false;
-  bool _isResizing = false;
-  bool _isMoving = false;
-  Offset? _dragStartPosition;
-  // int? _initialDuration; // Removed as unused
-  // int? _initialStep; // Removed as unused
 
   @override
   Widget build(BuildContext context) {
@@ -48,11 +37,7 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
       child: GestureDetector(
-        onTap: widget.onTap,
         onSecondaryTap: widget.onDelete,
-        onPanStart: _onPanStart,
-        onPanUpdate: _onPanUpdate,
-        onPanEnd: _onPanEnd,
         child: Container(
           decoration: BoxDecoration(
             color: noteColor,
@@ -184,43 +169,13 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
     );
   }
 
-  void _onPanStart(DragStartDetails details) {
-    if (_isResizing) return;
-    
-    setState(() {
-      _isMoving = true;
-      _dragStartPosition = details.localPosition;
-    });
-  }
 
-  void _onPanUpdate(DragUpdateDetails details) {
-    if (_isResizing || !_isMoving || _dragStartPosition == null) return;
-    
-    final delta = details.localPosition - _dragStartPosition!;
-    widget.onMove(delta);
-    _dragStartPosition = details.localPosition;
-  }
-
-  void _onPanEnd(DragEndDetails details) {
-    if (_isResizing) return;
-    
-    setState(() {
-      _isMoving = false;
-      _dragStartPosition = null;
-    });
-  }
 
   void _startResize(bool fromLeft, Offset globalPosition) {
-    setState(() {
-      _isResizing = true;
-    });
     widget.onResizeStart(fromLeft, globalPosition);
   }
 
   void _endResize() {
-    setState(() {
-      _isResizing = false;
-    });
     widget.onResizeEnd();
   }
 
