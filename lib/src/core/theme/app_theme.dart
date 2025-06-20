@@ -14,10 +14,61 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         surfaceTintColor: Colors.transparent,
         backgroundColor: colors.surface,
+        elevation: 0,
+        iconTheme: IconThemeData(color: colors.onSurface),
       ),
       cardTheme: CardThemeData(
-        color: colors.surface,
-        shadowColor: colors.shadow.withValues(alpha: .5),
+        color: colors.surfaceContainerHighest,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shadowColor: colors.shadow.withOpacity(0.2),
+      ),
+      dividerTheme: DividerThemeData(
+        color: colors.outlineVariant.withOpacity(0.5),
+        thickness: 1,
+      ),
+      iconTheme: IconThemeData(
+        color: colors.onSurface,
+        size: 20,
+      ),
+      buttonTheme: ButtonThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colors.primary,
+          foregroundColor: colors.onPrimary,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: colors.primary,
+          side: BorderSide(color: colors.outline),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: colors.primary,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: brightness == Brightness.dark ? colors.surfaceContainerHighest : colors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(4),
+          borderSide: BorderSide(color: colors.outline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(4),
+          borderSide: BorderSide(color: colors.outline.withOpacity(0.5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(4),
+          borderSide: BorderSide(color: colors.primary),
+        ),
       ),
       colorScheme: colors,
       extensions: [brightness == Brightness.light ? CustomColors.light : CustomColors.dark],

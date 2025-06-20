@@ -1,63 +1,67 @@
 import 'package:flutter/material.dart';
 
+// Light theme inspired by professional DAW interfaces
 const lightColorScheme = ColorScheme(
   brightness: Brightness.light,
-  primary: Color(0xFF6750A4),
+  primary: Color(0xFF2C7BE5),         // Bright blue for primary actions
   onPrimary: Color(0xFFFFFFFF),
-  primaryContainer: Color(0xFFEADDFF),
-  onPrimaryContainer: Color(0xFF21005D),
-  secondary: Color(0xFF625B71),
+  primaryContainer: Color(0xFFD6E6FF),
+  onPrimaryContainer: Color(0xFF0A2E5C),
+  secondary: Color(0xFF00B8D4),       // Teal accent for secondary elements
   onSecondary: Color(0xFFFFFFFF),
-  secondaryContainer: Color(0xFFE8DEF8),
-  onSecondaryContainer: Color(0xFF1D192B),
-  tertiary: Color(0xFF7D5260),
+  secondaryContainer: Color(0xFFCFF8FF),
+  onSecondaryContainer: Color(0xFF00363D),
+  tertiary: Color(0xFFFF6B6B),        // Coral for tertiary elements
   onTertiary: Color(0xFFFFFFFF),
-  tertiaryContainer: Color(0xFFFFD8E4),
-  onTertiaryContainer: Color(0xFF31111D),
-  error: Color(0xFFB3261E),
+  tertiaryContainer: Color(0xFFFFDADA),
+  onTertiaryContainer: Color(0xFF410002),
+  error: Color(0xFFE53935),
   onError: Color(0xFFFFFFFF),
-  errorContainer: Color(0xFFF9DEDC),
-  onErrorContainer: Color(0xFF410E0B),
+  errorContainer: Color(0xFFFFDAD6),
+  onErrorContainer: Color(0xFF410002),
   outline: Color(0xFF79747E),
-  surface: Color(0XFFF4F4F5),
-  onSurface: Color(0XFF09090B),
+  surface: Color(0xFFF5F7FA),         // Light gray background
+  onSurface: Color(0xFF1F2933),       // Dark text on light background
+  surfaceContainerHighest: Color(0xFFE4E7EB), // For container backgrounds
   onSurfaceVariant: Color(0xFF49454F),
-  inverseSurface: Color(0xFF313033),
-  onInverseSurface: Color(0xFFF4EFF4),
-  inversePrimary: Color(0xFFD0BCFF),
+  inverseSurface: Color(0xFF2D3748),
+  onInverseSurface: Color(0xFFF5F7FA),
+  inversePrimary: Color(0xFF90CAF9),
   shadow: Color(0xFF000000),
-  surfaceTint: Color(0xFF6750A4),
+  surfaceTint: Color(0xFF2C7BE5),
   outlineVariant: Color(0xFFCAC4D0),
   scrim: Color(0xFF000000),
 );
 
+// Dark theme inspired by professional DAW interfaces like Ableton, FL Studio
 const darkColorScheme = ColorScheme(
   brightness: Brightness.dark,
-  primary: Color(0xFFD0BCFF),
-  onPrimary: Color(0xFF381E72),
-  primaryContainer: Color(0xFF4F378B),
-  onPrimaryContainer: Color(0xFFEADDFF),
-  secondary: Color(0xFFCCC2DC),
-  onSecondary: Color(0xFF332D41),
-  secondaryContainer: Color(0xFF4A4458),
-  onSecondaryContainer: Color(0xFFE8DEF8),
-  tertiary: Color(0xFFEFB8C8),
-  onTertiary: Color(0xFF492532),
-  tertiaryContainer: Color(0xFF633B48),
-  onTertiaryContainer: Color(0xFFFFD8E4),
-  error: Color(0xFFF2B8B5),
-  onError: Color(0xFF601410),
-  errorContainer: Color(0xFF8C1D18),
-  onErrorContainer: Color(0xFFF9DEDC),
-  outline: Color(0xFF938F99),
-  surface: Color.fromARGB(255, 37, 37, 41),
-  onSurface: Color.fromARGB(255, 226, 227, 216),
+  primary: Color(0xFF3699FF),         // Bright blue for primary actions
+  onPrimary: Color(0xFF003060),
+  primaryContainer: Color(0xFF004B9A),
+  onPrimaryContainer: Color(0xFFD1E4FF),
+  secondary: Color(0xFF00E5FF),       // Bright cyan for secondary elements
+  onSecondary: Color(0xFF003641),
+  secondaryContainer: Color(0xFF004E5D),
+  onSecondaryContainer: Color(0xFFA4F5FF),
+  tertiary: Color(0xFFFF5252),        // Red accent for tertiary elements
+  onTertiary: Color(0xFF690005),
+  tertiaryContainer: Color(0xFF93000A),
+  onTertiaryContainer: Color(0xFFFFDAD6),
+  error: Color(0xFFFF5252),
+  onError: Color(0xFF690005),
+  errorContainer: Color(0xFF93000A),
+  onErrorContainer: Color(0xFFFFDAD6),
+  outline: Color(0xFF8A8D93),
+  surface: Color(0xFF1E1E2D),         // Very dark blue-gray for main background
+  onSurface: Color(0xFFE6E8EC),       // Light text on dark background
+  surfaceContainerHighest: Color(0xFF2D2D3F), // Slightly lighter for container backgrounds
   onSurfaceVariant: Color(0xFFCAC4D0),
-  inverseSurface: Color(0xFFE6E1E5),
-  onInverseSurface: Color(0xFF313033),
-  inversePrimary: Color(0xFF6750A4),
+  inverseSurface: Color(0xFFE6E8EC),
+  onInverseSurface: Color(0xFF1E1E2D),
+  inversePrimary: Color(0xFF3699FF),
   shadow: Color(0xFF000000),
-  surfaceTint: Color(0xFFD0BCFF),
+  surfaceTint: Color(0xFF3699FF),
   outlineVariant: Color(0xFF49454F),
   scrim: Color(0xFF000000),
 );

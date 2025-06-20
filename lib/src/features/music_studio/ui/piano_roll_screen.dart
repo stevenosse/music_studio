@@ -278,6 +278,18 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
       ),
       child: Row(
         children: [
+          // Back button
+          IconButton(
+            onPressed: () => context.router.pop(),
+            icon: const Icon(IconsaxPlusLinear.arrow_left, size: 20),
+            tooltip: 'Back to studio',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            style: IconButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          
           // Track info
           Row(
             children: [
