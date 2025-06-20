@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mstudio/src/features/music_studio/logic/piano_roll/piano_roll_state.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 
 import '../../../logic/piano_roll/piano_roll_notifier.dart';
- // Added import
+// Added import
 import '../../../models/note.dart';
 import 'piano_roll_grid_painter.dart';
 import 'piano_roll_note_widget.dart';
@@ -50,15 +51,47 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
   int? _originalStepAtResizeStart;
   int? _originalDurationAtResizeStart;
 
+  // For keyboard modifier keys
+  final FocusNode _focusNode = FocusNode();
+  bool _isModifierKeyPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Request focus when the widget is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(_focusNode);
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  bool _isControlOrCommandPressed(KeyEvent event) {
+    return HardwareKeyboard.instance.isControlPressed ||
+        HardwareKeyboard.instance.isMetaPressed;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<PianoRollNotifier>(
-      builder: (context, notifier, child) {
+    return KeyboardListener(
+      focusNode: _focusNode,
+      onKeyEvent: (event) {
+        setState(() {
+          _isModifierKeyPressed = _isControlOrCommandPressed(event);
+        });
+      },
+      child: Consumer<PianoRollNotifier>(builder: (context, notifier, child) {
         final state = notifier.value;
 
         return GestureDetector(
+          onTap: () => FocusScope.of(context).requestFocus(_focusNode),
           behavior: HitTestBehavior.translucent,
           onTapUp: (details) => _handleTapUp(details, notifier),
+          onSecondaryTapUp: (details) => _handleSecondaryTapUp(details, notifier),
           onPanStart: (details) => _handlePanStart(details, notifier),
           onPanUpdate: (details) => _handlePanUpdate(details, notifier),
           onPanEnd: (details) => _handlePanEnd(details, notifier),
@@ -89,16 +122,16 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
                       ),
                       size: Size(notifier.totalWidth, notifier.totalHeight),
                     ),
-                    ...widget.notes.map((note) => _buildNoteWidget(note, notifier)),
-                    if (_isSelectionBoxActive)
-                      _buildSelectionBox(),
+                    ...widget.notes
+                        .map((note) => _buildNoteWidget(note, notifier)),
+                    if (_isSelectionBoxActive) _buildSelectionBox(),
                   ],
                 ),
               ),
             ),
           ),
         );
-      },
+      }),
     );
   }
 
@@ -143,7 +176,8 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
       rect: rect,
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1),
+          border: Border.all(
+              color: Theme.of(context).colorScheme.primary, width: 1),
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
         ),
       ),
@@ -159,42 +193,59 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
 
     final clickedNote = _findNoteAtPosition(localPosition, notifier);
 
-    if (notifier.value.mode == PianoRollMode.draw) {
-      if (clickedNote != null) {
-        widget.onNotesSelected({clickedNote.id}, addToSelection: false);
-      } else {
-        _createNoteAtPosition(gridPos, notifier);
-      }
-    } else if (notifier.value.mode == PianoRollMode.select) {
-      if (clickedNote != null) {
-        // TODO: Handle modifier keys for multi-select
-        notifier.toggleNoteSelection(clickedNote.id);
-      } else {
-        notifier.deselectAllNotes();
-      }
+    switch (notifier.value.tool) {
+      case PianoRollTool.select:
+        if (clickedNote != null) {
+          if (_isModifierKeyPressed) {
+            notifier.toggleNoteSelection(clickedNote.id);
+          } else {
+            widget.onNotesSelected({clickedNote.id}, addToSelection: false);
+          }
+        } else {
+          notifier.deselectAllNotes();
+        }
+        break;
+      case PianoRollTool.draw:
+        if (clickedNote == null) {
+          _createNoteAtPosition(gridPos, notifier);
+        }
+        break;
+      case PianoRollTool.mute:
+        if (clickedNote != null) {
+          final updatedNote = clickedNote.copyWith(isMuted: !clickedNote.isMuted);
+          widget.onNoteUpdated(updatedNote);
+        }
+        break;
+    }
+  }
+
+  void _handleSecondaryTapUp(TapUpDetails details, PianoRollNotifier notifier) {
+    final localPosition = details.localPosition;
+    final clickedNote = _findNoteAtPosition(localPosition, notifier);
+    if (clickedNote != null) {
+      widget.onNoteDeleted(clickedNote.id);
     }
   }
 
   void _handlePanStart(DragStartDetails details, PianoRollNotifier notifier) {
-    final localPosition = details.localPosition;
     if (notifier.value.isResizing) return;
 
-    if (notifier.value.mode == PianoRollMode.select) {
-      final clickedNote = _findNoteAtPosition(localPosition, notifier);
+    final localPosition = details.localPosition;
+    final clickedNote = _findNoteAtPosition(localPosition, notifier);
 
-      if (clickedNote != null) {
-        if (!notifier.isNoteSelected(clickedNote.id)) {
-          // If note is not selected, select it and deselect others
-          notifier.selectNote(clickedNote.id);
-        }
-        // Now start dragging all selected notes
-        final gridStartPosition = notifier.screenToGrid(localPosition);
-        notifier.startDragging(
-          Offset(gridStartPosition.step, gridStartPosition.pitch.toDouble()),
-          widget.notes,
-        );
-      } else {
-        // Start selection box
+    if (clickedNote != null) {
+      // If a note is clicked, start dragging, regardless of tool.
+      if (!notifier.isNoteSelected(clickedNote.id)) {
+        widget.onNotesSelected({clickedNote.id}, addToSelection: _isModifierKeyPressed);
+      }
+      final gridStartPosition = notifier.screenToGrid(localPosition);
+      notifier.startDragging(
+        Offset(gridStartPosition.step, gridStartPosition.pitch.toDouble()),
+        widget.notes,
+      );
+    } else {
+      // If empty space is clicked, only start a selection box in select mode.
+      if (notifier.value.tool == PianoRollTool.select) {
         notifier.deselectAllNotes();
         setState(() {
           _selectionBoxStart = localPosition;
@@ -221,7 +272,7 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
 
   void _handlePanEnd(DragEndDetails details, PianoRollNotifier notifier) {
     if (notifier.value.isResizing) {
-       _onNoteResizeGestureEnd(notifier);
+      _onNoteResizeGestureEnd(notifier);
     } else if (notifier.value.isDragging) {
       notifier.stopDragging();
     } else if (_isSelectionBoxActive) {
@@ -233,7 +284,9 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
 
   void _updateNoteDragging(Offset currentPosition, PianoRollNotifier notifier) {
     final state = notifier.value;
-    if (!state.isDragging || state.dragStartPosition == null || state.dragStartNoteData == null) {
+    if (!state.isDragging ||
+        state.dragStartPosition == null ||
+        state.dragStartNoteData == null) {
       return;
     }
 
@@ -243,7 +296,8 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
     final pitchDelta = currentGridPos.pitch - startGridPos.dy.round();
 
     final updatedNotes = <Note>[];
-    final notesToUpdate = widget.notes.where((n) => state.selectedNotes.contains(n.id));
+    final notesToUpdate =
+        widget.notes.where((n) => state.selectedNotes.contains(n.id));
 
     for (final noteToUpdate in notesToUpdate) {
       final dragData = state.dragStartNoteData![noteToUpdate.id];
@@ -254,10 +308,13 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
 
       final snappedStep = notifier.snapToGrid(newStepDouble).round();
       final clampedPitch = newPitch.clamp(state.lowestNote, state.highestNote);
-      final clampedStep = snappedStep.clamp(0, state.totalSteps - noteToUpdate.duration);
+      final clampedStep =
+          snappedStep.clamp(0, state.totalSteps - noteToUpdate.duration);
 
-      if (clampedStep != noteToUpdate.step || clampedPitch != noteToUpdate.pitch) {
-        updatedNotes.add(noteToUpdate.copyWith(step: clampedStep, pitch: clampedPitch));
+      if (clampedStep != noteToUpdate.step ||
+          clampedPitch != noteToUpdate.pitch) {
+        updatedNotes
+            .add(noteToUpdate.copyWith(step: clampedStep, pitch: clampedPitch));
       }
     }
 
@@ -298,9 +355,12 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
     });
   }
 
-  void _updateNoteResize(Offset currentPanPosition, PianoRollNotifier notifier) {
-    if (_resizingNote == null || _resizeGestureStartPanPosition == null ||
-        _originalStepAtResizeStart == null || _originalDurationAtResizeStart == null) {
+  void _updateNoteResize(
+      Offset currentPanPosition, PianoRollNotifier notifier) {
+    if (_resizingNote == null ||
+        _resizeGestureStartPanPosition == null ||
+        _originalStepAtResizeStart == null ||
+        _originalDurationAtResizeStart == null) {
       return;
     }
 
@@ -313,25 +373,33 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
     if (_isResizingFromLeft) {
       // Calculate the new potential start step and snap it to the grid
       final potentialNewStepDouble = _originalStepAtResizeStart! + stepDelta;
-      final snappedNewStep = notifier.snapToGrid(potentialNewStepDouble).round();
+      final snappedNewStep =
+          notifier.snapToGrid(potentialNewStepDouble).round();
 
       // Calculate the change in steps and the resulting new duration
       final snappedStepChange = snappedNewStep - _originalStepAtResizeStart!;
-      final potentialNewDuration = _originalDurationAtResizeStart! - snappedStepChange;
+      final potentialNewDuration =
+          _originalDurationAtResizeStart! - snappedStepChange;
 
       // Apply changes if valid (duration >= 1 and left handle doesn't cross right handle)
-      if (potentialNewDuration >= 1 && snappedNewStep < (_originalStepAtResizeStart! + _originalDurationAtResizeStart!)) {
+      if (potentialNewDuration >= 1 &&
+          snappedNewStep <
+              (_originalStepAtResizeStart! + _originalDurationAtResizeStart!)) {
         newStep = snappedNewStep;
         newDuration = potentialNewDuration;
       }
-    } else { // Resizing from the right
+    } else {
+      // Resizing from the right
       // Calculate the new potential end step and snap it to the grid
-      final originalEndStep = _originalStepAtResizeStart! + _originalDurationAtResizeStart!;
+      final originalEndStep =
+          _originalStepAtResizeStart! + _originalDurationAtResizeStart!;
       final potentialNewEndStepDouble = originalEndStep + stepDelta;
-      final snappedNewEndStep = notifier.snapToGrid(potentialNewEndStepDouble).round();
+      final snappedNewEndStep =
+          notifier.snapToGrid(potentialNewEndStepDouble).round();
 
       // Calculate the new duration from the snapped end position
-      final potentialNewDuration = snappedNewEndStep - _originalStepAtResizeStart!;
+      final potentialNewDuration =
+          snappedNewEndStep - _originalStepAtResizeStart!;
 
       // Apply change if valid (duration >= 1)
       if (potentialNewDuration >= 1) {
@@ -344,8 +412,10 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
     newStep = newStep.clamp(0, state.totalSteps - 1);
     newDuration = newDuration.clamp(1, state.totalSteps - newStep);
 
-    if (newStep != _resizingNote!.step || newDuration != _resizingNote!.duration) {
-      final updatedNote = _resizingNote!.copyWith(step: newStep, duration: newDuration);
+    if (newStep != _resizingNote!.step ||
+        newDuration != _resizingNote!.duration) {
+      final updatedNote =
+          _resizingNote!.copyWith(step: newStep, duration: newDuration);
       widget.onNoteUpdated(updatedNote);
     }
   }
@@ -374,9 +444,6 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
 
   void _createNoteAtPosition(GridPosition gridPos, PianoRollNotifier notifier) {
     final snappedStep = notifier.snapToGrid(gridPos.step).round();
-    final alreadyExists = widget.notes.any((note) =>
-        note.step == snappedStep && note.pitch == gridPos.pitch);
-    if (alreadyExists) return;
 
     const defaultDuration = 1;
 
@@ -391,5 +458,7 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
     );
 
     widget.onNoteCreated(newNote);
+    // Select the newly created note, clearing previous selections.
+    widget.onNotesSelected({newNote.id}, addToSelection: false);
   }
 }

@@ -34,7 +34,7 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
     final theme = Theme.of(context);
     final noteColor = _getNoteColor(theme);
     final borderColor = _getBorderColor(theme);
-    
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
@@ -51,7 +51,7 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
             boxShadow: _isHovering || widget.isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: widget.note.color.withAlpha(51), // ~20% opacity
                       blurRadius: widget.isSelected ? 6 : 3,
                       offset: Offset(0, widget.isSelected ? 3 : 1),
                     ),
@@ -115,7 +115,7 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
                 child: Container(
                   width: 2,
                   height: double.infinity,
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: Colors.white.withAlpha(204), // ~80% opacity
                 ),
               ),
             ),
@@ -141,7 +141,7 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
                 child: Container(
                   width: 2,
                   height: double.infinity,
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: Colors.white.withAlpha(204), // ~80% opacity
                 ),
               ),
             ),
@@ -161,7 +161,7 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
       height: velocityHeight,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.3),
+          color: Colors.white.withAlpha(77), // ~30% opacity
           borderRadius: const BorderRadius.only(
             bottomLeft: Radius.circular(4),
             bottomRight: Radius.circular(4),
@@ -182,13 +182,16 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
   }
 
   Color _getNoteColor(ThemeData theme) {
+    if (widget.note.isMuted) {
+      return widget.note.color.withAlpha(128); // 50% opacity
+    }
     if (widget.isSelected) {
-      return theme.colorScheme.primary.withValues(alpha: 0.9);
+      return theme.colorScheme.primary.withAlpha(230); // ~90% opacity
     }
     if (_isHovering) {
-      return Colors.green.withValues(alpha: 0.8);
+      return widget.note.color.withAlpha(204); // ~80% opacity
     }
-    return Colors.green.withValues(alpha: 0.7);
+    return widget.note.color.withAlpha(178); // ~70% opacity
   }
 
   Color _getBorderColor(ThemeData theme) {

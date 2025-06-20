@@ -9,6 +9,7 @@ class Note extends Equatable {
   final int velocity; // 0-127
   final int trackIndex;
   final Color color;
+  final bool isMuted;
 
   const Note({
     required this.id,
@@ -18,6 +19,7 @@ class Note extends Equatable {
     this.velocity = 100,
     required this.trackIndex,
     required this.color,
+    this.isMuted = false,
   });
 
   String get note {
@@ -36,6 +38,7 @@ class Note extends Equatable {
     int? velocity,
     int? trackIndex,
     Color? color,
+    bool? isMuted,
   }) {
     return Note(
       id: id ?? this.id,
@@ -45,6 +48,7 @@ class Note extends Equatable {
       velocity: velocity ?? this.velocity,
       trackIndex: trackIndex ?? this.trackIndex,
       color: color ?? this.color,
+      isMuted: isMuted ?? this.isMuted,
     );
   }
 
@@ -57,6 +61,7 @@ class Note extends Equatable {
         velocity,
         trackIndex,
         color,
+        isMuted,
       ];
 
   Map<String, dynamic> toJson() {
@@ -68,6 +73,7 @@ class Note extends Equatable {
       'velocity': velocity,
       'trackIndex': trackIndex,
       'color': color.toARGB32(),
+      'isMuted': isMuted,
     };
   }
 
@@ -80,6 +86,7 @@ class Note extends Equatable {
       velocity: json['velocity'] as int? ?? 100,
       trackIndex: json['trackIndex'] as int,
       color: Color(json['color'] as int),
+      isMuted: json['isMuted'] as bool? ?? false,
     );
   }
 

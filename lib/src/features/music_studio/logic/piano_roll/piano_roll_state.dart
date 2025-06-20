@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../../models/note.dart';
 import 'note_drag_data.dart';
 
-enum PianoRollMode {
-  draw,
+enum PianoRollTool {
   select,
+  draw,
+  mute,
 }
 
 enum SnapResolution {
@@ -24,7 +25,7 @@ enum SnapResolution {
 class PianoRollState extends Equatable {
   const PianoRollState({
     this.selectedNotes = const {},
-    this.mode = PianoRollMode.draw,
+    this.tool = PianoRollTool.draw,
     this.snapResolution = SnapResolution.sixteenth,
     this.isSnapEnabled = true,
     this.zoomLevel = 1.0,
@@ -50,7 +51,7 @@ class PianoRollState extends Equatable {
   });
 
   final Set<String> selectedNotes;
-  final PianoRollMode mode;
+  final PianoRollTool tool;
   final SnapResolution snapResolution;
   final bool isSnapEnabled;
   final double zoomLevel;
@@ -80,7 +81,7 @@ class PianoRollState extends Equatable {
 
   PianoRollState copyWith({
     Set<String>? selectedNotes,
-    PianoRollMode? mode,
+    PianoRollTool? tool,
     SnapResolution? snapResolution,
     bool? isSnapEnabled,
     double? zoomLevel,
@@ -106,7 +107,7 @@ class PianoRollState extends Equatable {
   }) {
     return PianoRollState(
       selectedNotes: selectedNotes ?? this.selectedNotes,
-      mode: mode ?? this.mode,
+      tool: tool ?? this.tool,
       snapResolution: snapResolution ?? this.snapResolution,
       isSnapEnabled: isSnapEnabled ?? this.isSnapEnabled,
       zoomLevel: zoomLevel ?? this.zoomLevel,
@@ -135,7 +136,7 @@ class PianoRollState extends Equatable {
   @override
   List<Object?> get props => [
         selectedNotes,
-        mode,
+        tool,
         snapResolution,
         isSnapEnabled,
         zoomLevel,

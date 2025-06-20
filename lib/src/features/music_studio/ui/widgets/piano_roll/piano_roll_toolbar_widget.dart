@@ -80,32 +80,35 @@ class PianoRollToolbarWidget extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildModeButton(
-            context,
-            icon: Icons.edit,
-            label: 'Draw',
-            isSelected: notifier.value.mode == PianoRollMode.draw,
-            onPressed: () => notifier.setMode(PianoRollMode.draw),
-          ),
-          Container(
-            width: 1,
-            height: 32,
-            color: theme.dividerColor,
-          ),
-          _buildModeButton(
+          _ToolButton(
             context,
             icon: Icons.mouse,
             label: 'Select',
-            isSelected: notifier.value.mode == PianoRollMode.select,
-            onPressed: () => notifier.setMode(PianoRollMode.select),
+            isSelected: notifier.value.tool == PianoRollTool.select,
+            onPressed: () => notifier.setTool(PianoRollTool.select),
+          ),
+          const SizedBox(width: 8),
+          _ToolButton(
+            context,
+            icon: Icons.edit,
+            label: 'Draw',
+            isSelected: notifier.value.tool == PianoRollTool.draw,
+            onPressed: () => notifier.setTool(PianoRollTool.draw),
+          ),
+          const SizedBox(width: 8),
+          _ToolButton(
+            context,
+            icon: Icons.volume_off,
+            label: 'Mute',
+            isSelected: notifier.value.tool == PianoRollTool.mute,
+            onPressed: () => notifier.setTool(PianoRollTool.mute),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildModeButton(
-    BuildContext context, {
+  Widget _ToolButton(BuildContext context, {
     required IconData icon,
     required String label,
     required bool isSelected,

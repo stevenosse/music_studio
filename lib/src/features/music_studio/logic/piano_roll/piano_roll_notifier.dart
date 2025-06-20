@@ -50,16 +50,11 @@ class PianoRollNotifier extends ValueNotifier<PianoRollState> {
     return Offset(x, y);
   }
 
-  // Mode management
-  void setMode(PianoRollMode mode) {
-    value = value.copyWith(mode: mode);
-  }
+  // --- Tool and Snap Management ---
 
-  void toggleMode() {
-    final newMode = value.mode == PianoRollMode.draw 
-        ? PianoRollMode.select 
-        : PianoRollMode.draw;
-    setMode(newMode);
+  void setTool(PianoRollTool tool) {
+    if (value.tool == tool) return;
+    value = value.copyWith(tool: tool);
   }
 
   // Snap settings
