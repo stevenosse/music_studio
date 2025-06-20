@@ -1,0 +1,78 @@
+name: mstudio
+description: A boilerplate for Flutter Projects using BLoC Architecture
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  auto_route: ^10.1.0
+  cupertino_icons: ^1.0.8
+  collection: ^1.19.1
+  dio: ^5.8.0+1
+  equatable: ^2.0.7
+  flutter_svg: ^2.1.0
+  get_it: ^8.0.3
+  provider: ^6.1.5
+  iconsax_plus: ^1.0.0
+  intl: ^0.20.2
+  intl_utils: ^2.8.10
+  json_annotation: ^4.9.0
+  logger: ^2.5.0
+  shared_preferences: ^2.5.3
+  
+  # Audio dependencies for music production
+  flutter_midi_pro: ^3.1.4
+  audioplayers: ^6.1.0
+  
+  # File system access
+  file_picker: ^10.2.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  auto_route_generator: ^10.2.3
+  json_serializable: ^6.9.5
+  build_runner: ^2.4.15
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/soundfonts/
+    - assets/samples/
+
+  # fonts:
+  #   - family: GeneralSans
+  #     fonts:
+  #       - asset: assets/fonts/GeneralSans-Regular.otf
+
+fluttergen:
+  output: lib/src/generated
+  line_length: 120
+
+  integrations:
+    flutter_svg: true
+
+flutter_intl:
+  enabled: true
+  class_name: I18n
+  main_locale: en
+  arb_dir: lib/src/core/i18n/l10n
+  output_dir: lib/src/core/i18n
+
+flutter_kit:
+  app_name: "Music Studio"
+  ios_bundle_id: com.stevenosse.music_studio
+  android_package_name: com.stevenosse.music_studio
+  dart_package: mstudio
