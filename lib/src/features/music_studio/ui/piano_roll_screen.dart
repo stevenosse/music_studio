@@ -15,6 +15,7 @@ import 'widgets/piano_roll/piano_roll_keyboard_widget.dart';
 import 'widgets/piano_roll/piano_roll_header_widget.dart';
 import 'widgets/piano_roll/piano_roll_toolbar_widget.dart';
 import 'widgets/piano_roll/piano_roll_velocity_editor_widget.dart';
+import 'widgets/app_header.dart';
 
 @RoutePage()
 class PianoRollScreen extends StatefulWidget implements AutoRouteWrapper {
@@ -83,22 +84,17 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
       if (_pianoScrollController.hasClients) {
         _isUpdatingPianoScroll = true;
         // Sync scroll positions directly without inversion
-        final maxScrollExtent =
-            _verticalScrollController.position.maxScrollExtent;
-        final pianoMaxScrollExtent =
-            _pianoScrollController.position.maxScrollExtent;
+        final maxScrollExtent = _verticalScrollController.position.maxScrollExtent;
+        final pianoMaxScrollExtent = _pianoScrollController.position.maxScrollExtent;
 
         if (maxScrollExtent > 0 && pianoMaxScrollExtent > 0) {
-          final normalizedOffset =
-              _verticalScrollController.offset / maxScrollExtent;
+          final normalizedOffset = _verticalScrollController.offset / maxScrollExtent;
           final targetOffset = pianoMaxScrollExtent * normalizedOffset;
           _pianoScrollController.jumpTo(targetOffset);
         }
         _isUpdatingPianoScroll = false;
       }
-      context
-          .read<PianoRollNotifier>()
-          .setVerticalScroll(_verticalScrollController.offset);
+      context.read<PianoRollNotifier>().setVerticalScroll(_verticalScrollController.offset);
     });
 
     // Sync piano keyboard scroll back to grid
@@ -108,14 +104,11 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
       if (_verticalScrollController.hasClients) {
         _isUpdatingVerticalScroll = true;
         // Sync scroll positions directly without inversion
-        final pianoMaxScrollExtent =
-            _pianoScrollController.position.maxScrollExtent;
-        final maxScrollExtent =
-            _verticalScrollController.position.maxScrollExtent;
+        final pianoMaxScrollExtent = _pianoScrollController.position.maxScrollExtent;
+        final maxScrollExtent = _verticalScrollController.position.maxScrollExtent;
 
         if (pianoMaxScrollExtent > 0 && maxScrollExtent > 0) {
-          final normalizedOffset =
-              _pianoScrollController.offset / pianoMaxScrollExtent;
+          final normalizedOffset = _pianoScrollController.offset / pianoMaxScrollExtent;
           final targetOffset = maxScrollExtent * normalizedOffset;
           _verticalScrollController.jumpTo(targetOffset);
         }
@@ -125,9 +118,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
 
     _horizontalScrollController.addListener(() {
       if (_horizontalScrollController.hasClients) {
-        context
-            .read<PianoRollNotifier>()
-            .setHorizontalScroll(_horizontalScrollController.offset);
+        context.read<PianoRollNotifier>().setHorizontalScroll(_horizontalScrollController.offset);
       }
     });
   }
@@ -149,8 +140,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
     final l10n = I18n.of(context);
 
     return Consumer2<MusicStudioNotifier, PianoRollNotifier>(
-      builder:
-          (context, musicStudioNotifierFromBuilder, pianoRollNotifier, child) {
+      builder: (context, musicStudioNotifierFromBuilder, pianoRollNotifier, child) {
         final musicStudioNotifier = context.watch<MusicStudioNotifier>();
 
         final currentMusicValue = musicStudioNotifier.value;
@@ -173,16 +163,17 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
         return Focus(
           focusNode: _focusNode,
           autofocus: true,
-          onKeyEvent: (node, event) =>
-              _handleKeyEvent(event, musicStudioNotifier, notes),
+          onKeyEvent: (node, event) => _handleKeyEvent(event, musicStudioNotifier, notes),
           child: Scaffold(
-            appBar: _buildAppBar(context, l10n, track, musicStudioNotifier),
             body: Column(
               children: [
+                Flexible(child: const AppHeader()),
                 // Toolbar
+
+                _buildAppBar(context, l10n, track, musicStudioNotifier),
+                const SizedBox(height: Dimens.spacingSmall), // Add some spacing if needed
                 PianoRollToolbarWidget(
-                  onQuantize: () =>
-                      _quantizeSelectedNotes(musicStudioNotifier, notes),
+                  onQuantize: () => _quantizeSelectedNotes(musicStudioNotifier, notes),
                   onZoomIn: pianoRollNotifier.zoomIn,
                   onZoomOut: pianoRollNotifier.zoomOut,
                   onZoomFit: () => pianoRollNotifier.setZoom(1.0),
@@ -190,6 +181,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
 
                 // Main piano roll area
                 Expanded(
+                  flex: 9,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -202,14 +194,12 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
                             Expanded(
                               child: PianoRollKeyboardWidget(
                                 verticalScrollController: _pianoScrollController,
-                                onKeyPressed: (pitch) =>
-                                    _previewNote(musicStudioNotifier, pitch),
+                                onKeyPressed: (pitch) => _previewNote(musicStudioNotifier, pitch),
                                 totalKeys: pianoRollState.totalKeys,
                                 lowestNote: pianoRollState.lowestNote,
                               ),
                             ),
-                            if (pianoRollState.showVelocityEditor)
-                              SizedBox(height: Dimens.pianoRollVelocityBarHeight),
+                            if (pianoRollState.showVelocityEditor) SizedBox(height: Dimens.pianoRollVelocityBarHeight),
                           ],
                         ),
                       ),
@@ -230,8 +220,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
                                     cellWidth: pianoRollNotifier.cellWidth,
                                     totalSteps: pianoRollNotifier.totalSteps,
                                     stepsPerBar: pianoRollNotifier.stepsPerBar,
-                                    onSeek: (position) =>
-                                        _seek(musicStudioNotifier, position),
+                                    onSeek: (position) => _seek(musicStudioNotifier, position),
                                   ),
                                 ),
                                 // Grid
@@ -252,14 +241,10 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
                                     height: Dimens.pianoRollVelocityBarHeight,
                                     child: PianoRollVelocityEditorWidget(
                                       notes: notes,
-                                      cellWidth:
-                                          40.0 * pianoRollState.zoomLevel,
+                                      cellWidth: 40.0 * pianoRollState.zoomLevel,
                                       totalSteps: pianoRollNotifier.totalSteps,
                                       onVelocityChanged: (note, velocity) =>
-                                          _updateNoteVelocity(
-                                              musicStudioNotifier,
-                                              note.id,
-                                              velocity),
+                                          _updateNoteVelocity(musicStudioNotifier, note.id, velocity),
                                     ),
                                   ),
                               ],
@@ -278,82 +263,83 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(
+  Widget _buildAppBar(
     BuildContext context,
     I18n l10n,
     track,
     MusicStudioNotifier musicStudioNotifier,
   ) {
-    return AppBar(
-      title: Row(
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: Dimens.spacingMedium),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+      ),
+      child: Row(
         children: [
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: track.color,
-              shape: BoxShape.circle,
-            ),
+          // Track info
+          Row(
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: track.color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: Dimens.spacingSmall),
+              Text(
+                '${track.name} - ${l10n.pianoRoll_title}',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ],
           ),
-          SizedBox(width: Dimens.spacingSmall),
-          Text('${track.name} - ${l10n.pianoRoll_title}'),
+          const Spacer(),
+          
+          Container(
+            height: 24,
+            width: 1,
+            margin: const EdgeInsets.symmetric(horizontal: Dimens.spacingMedium),
+            color: Theme.of(context).dividerColor,
+          ),
+          
+          // Zoom controls
+          Consumer<PianoRollNotifier>(
+            builder: (context, notifier, child) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: notifier.zoomOut,
+                    icon: const Icon(IconsaxPlusLinear.minus, size: 18),
+                    tooltip: l10n.pianoRoll_zoomOut,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${(notifier.value.zoomLevel * 100).round()}%',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: notifier.zoomIn,
+                    icon: const Icon(IconsaxPlusLinear.add, size: 18),
+                    tooltip: l10n.pianoRoll_zoomIn,
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ),
-      actions: [
-        // Transport controls
-        IconButton(
-          onPressed: () {
-            if (musicStudioNotifier.isPlaying) {
-              musicStudioNotifier.pause();
-            } else {
-              musicStudioNotifier.play();
-            }
-          },
-          icon: Icon(
-            musicStudioNotifier.isPlaying
-                ? IconsaxPlusLinear.pause
-                : IconsaxPlusLinear.play,
-          ),
-          tooltip: musicStudioNotifier.isPlaying
-              ? l10n.pianoRoll_pause
-              : l10n.pianoRoll_play,
-        ),
-        IconButton(
-          onPressed: () => musicStudioNotifier.stop(),
-          icon: const Icon(IconsaxPlusLinear.stop),
-          tooltip: l10n.pianoRoll_stop,
-        ),
-
-        const VerticalDivider(),
-
-        // Zoom controls
-        Consumer<PianoRollNotifier>(
-          builder: (context, notifier, child) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: notifier.zoomOut,
-                  icon: const Icon(IconsaxPlusLinear.minus),
-                  tooltip: l10n.pianoRoll_zoomOut,
-                ),
-                Text('${(notifier.value.zoomLevel * 100).round()}%'),
-                IconButton(
-                  onPressed: notifier.zoomIn,
-                  icon: const Icon(IconsaxPlusLinear.add),
-                  tooltip: l10n.pianoRoll_zoomIn,
-                ),
-              ],
-            );
-          },
-        ),
-
-        SizedBox(width: Dimens.spacingMedium),
-      ],
     );
   }
-
-
 
   KeyEventResult _handleKeyEvent(
     KeyEvent event,
@@ -363,8 +349,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
     // Delete selected notes
-    if (event.logicalKey == LogicalKeyboardKey.delete ||
-        event.logicalKey == LogicalKeyboardKey.backspace) {
+    if (event.logicalKey == LogicalKeyboardKey.delete || event.logicalKey == LogicalKeyboardKey.backspace) {
       if (context.read<PianoRollNotifier>().hasSelectedNotes()) {
         _deleteSelectedNotes(musicStudioNotifier);
         return KeyEventResult.handled;
@@ -378,8 +363,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
     }
 
     // Ctrl+A to select all
-    if (event.logicalKey == LogicalKeyboardKey.keyA &&
-        HardwareKeyboard.instance.isControlPressed) {
+    if (event.logicalKey == LogicalKeyboardKey.keyA && HardwareKeyboard.instance.isControlPressed) {
       context.read<PianoRollNotifier>().selectAllNotes(notes);
       return KeyEventResult.handled;
     }
@@ -418,14 +402,12 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
   }
 
   void _deleteSelectedNotes(MusicStudioNotifier musicStudioNotifier) {
-    final selectedNoteIds =
-        context.read<PianoRollNotifier>().value.selectedNotes;
+    final selectedNoteIds = context.read<PianoRollNotifier>().value.selectedNotes;
     musicStudioNotifier.deleteMultipleNotes(selectedNoteIds.toList());
     context.read<PianoRollNotifier>().deselectAllNotes();
   }
 
-  void _updateNoteVelocity(
-      MusicStudioNotifier musicStudioNotifier, String noteId, int velocity) {
+  void _updateNoteVelocity(MusicStudioNotifier musicStudioNotifier, String noteId, int velocity) {
     final track = musicStudioNotifier.value.tracks[widget.trackIndex];
     final note = track.notes.firstWhere((n) => n.id == noteId);
     final updatedNote = note.copyWith(velocity: velocity);
@@ -436,34 +418,27 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
     musicStudioNotifier.audioService.seekToStep(position.round());
   }
 
-  void _moveSelectedNotes(
-      MusicStudioNotifier musicStudioNotifier, Offset delta) {
+  void _moveSelectedNotes(MusicStudioNotifier musicStudioNotifier, Offset delta) {
     final pianoRollNotifier = context.read<PianoRollNotifier>();
     final track = musicStudioNotifier.value.tracks[widget.trackIndex];
-    final selectedNotes =
-        track.notes.where((n) => pianoRollNotifier.isNoteSelected(n.id));
+    final selectedNotes = track.notes.where((n) => pianoRollNotifier.isNoteSelected(n.id));
 
     final updatedNotes = <Note>[];
     for (final note in selectedNotes) {
-      final newStep = pianoRollNotifier
-          .snapToGrid(note.step.toDouble() + delta.dx.round());
+      final newStep = pianoRollNotifier.snapToGrid(note.step.toDouble() + delta.dx.round());
       final newPitch = (note.pitch + delta.dy.round()).clamp(0, 127);
 
       updatedNotes.add(note.copyWith(
-        step: newStep
-            .round()
-            .clamp(0, pianoRollNotifier.totalSteps - note.duration),
+        step: newStep.round().clamp(0, pianoRollNotifier.totalSteps - note.duration),
         pitch: newPitch,
       ));
     }
     musicStudioNotifier.updateMultipleNotes(updatedNotes);
   }
 
-  void _quantizeSelectedNotes(
-      MusicStudioNotifier musicStudioNotifier, List<Note> notes) {
+  void _quantizeSelectedNotes(MusicStudioNotifier musicStudioNotifier, List<Note> notes) {
     final pianoRollNotifier = context.read<PianoRollNotifier>();
-    final selectedNotes =
-        notes.where((n) => pianoRollNotifier.isNoteSelected(n.id));
+    final selectedNotes = notes.where((n) => pianoRollNotifier.isNoteSelected(n.id));
 
     final updatedNotes = <Note>[];
     for (final note in selectedNotes) {
@@ -474,7 +449,6 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
 
   void _previewNote(MusicStudioNotifier musicStudioNotifier, int pitch) {
     final track = musicStudioNotifier.value.tracks[widget.trackIndex];
-    musicStudioNotifier.audioService
-        .playTrackSample(track.id, pitch: pitch, volume: 1.0);
+    musicStudioNotifier.audioService.playTrackSample(track.id, pitch: pitch, volume: 1.0);
   }
 }

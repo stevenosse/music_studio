@@ -4,12 +4,13 @@ import 'package:mstudio/src/core/environment.dart';
 import 'package:mstudio/src/core/i18n/l10n.dart';
 import 'package:mstudio/src/core/routing/app_router.dart';
 import 'package:mstudio/src/core/theme/app_theme.dart';
+import 'package:mstudio/src/shared/components/window_frame.dart';
 import 'package:mstudio/src/shared/locator.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 class Application extends StatelessWidget {
   final AppRouter _appRouter;
-  
+
   Application({
     super.key,
     AppRouter? appRouter,
@@ -33,6 +34,7 @@ class Application extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) => WindowFrame(child: child!),
       supportedLocales: I18n.delegate.supportedLocales,
     );
   }

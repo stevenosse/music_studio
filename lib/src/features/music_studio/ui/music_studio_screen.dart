@@ -1,12 +1,11 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:mstudio/src/shared/locator.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/theme/dimens.dart';
 import '../logic/music_studio_notifier.dart';
-import 'widgets/transport_controls_widget.dart';
+// import 'widgets/transport_controls_widget.dart'; // No longer directly used here
+import 'widgets/app_header.dart';
 import 'widgets/track_list_widget.dart';
 import 'widgets/step_sequencer_widget.dart';
 
@@ -27,33 +26,13 @@ class MusicStudioScreen extends StatelessWidget implements AutoRouteWrapper {
     return Consumer<MusicStudioNotifier>(
       builder: (context, notifier, child) {
         return Scaffold(
-          appBar: AppBar(
-            title: Text(notifier.value.projectName),
-            actions: [
-              IconButton(
-                icon: const Icon(IconsaxPlusLinear.document_download),
-                onPressed: () => notifier.saveProject(),
-              ),
-              IconButton(
-                icon: const Icon(IconsaxPlusLinear.folder_open),
-                onPressed: () => notifier.loadProject(),
-              ),
-              IconButton(
-                icon: const Icon(IconsaxPlusLinear.add),
-                onPressed: () => notifier.newProject(),
-              ),
-            ],
-          ),
           body: Column(
             children: [
-              // Transport controls at the top
-              Container(
-                padding: const EdgeInsets.all(Dimens.spacing),
-                child: const TransportControlsWidget(),
-              ),
+              Flexible(child: const AppHeader()),
 
               // Main content area
               Expanded(
+                flex: 9,
                 child: Row(
                   children: [
                     // Track list on the left

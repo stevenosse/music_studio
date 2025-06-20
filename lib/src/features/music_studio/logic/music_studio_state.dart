@@ -17,6 +17,8 @@ class MusicStudioState extends Equatable {
     this.selectedTrackIndex = 0,
     this.projectName = 'Untitled Project',
     this.hasUnsavedChanges = false,
+    this.isLooping = false,
+    this.isMetronomeEnabled = false,
   });
 
   final List<Track> tracks;
@@ -31,6 +33,8 @@ class MusicStudioState extends Equatable {
   final bool hasUnsavedChanges;
   final List<SamplePack> samplePacks;
   final List<String> soundfonts;
+  final bool isLooping;
+  final bool isMetronomeEnabled;
 
   MusicStudioState copyWith({
     String? projectName,
@@ -45,6 +49,8 @@ class MusicStudioState extends Equatable {
     bool? hasUnsavedChanges,
     List<SamplePack>? samplePacks,
     List<String>? soundfonts,
+    bool? isLooping,
+    bool? isMetronomeEnabled,
   }) {
     return MusicStudioState(
       projectName: projectName ?? this.projectName,
@@ -59,6 +65,8 @@ class MusicStudioState extends Equatable {
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
       samplePacks: samplePacks ?? this.samplePacks,
       soundfonts: soundfonts ?? this.soundfonts,
+      isLooping: isLooping ?? this.isLooping,
+      isMetronomeEnabled: isMetronomeEnabled ?? this.isMetronomeEnabled,
     );
   }
 
@@ -76,10 +84,12 @@ class MusicStudioState extends Equatable {
         hasUnsavedChanges,
         samplePacks,
         soundfonts,
+        isLooping,
+        isMetronomeEnabled,
       ];
 
   @override
   String toString() {
-    return 'MusicStudioState(projectName: $projectName, tracks: $tracks, selectedTrackIndex: $selectedTrackIndex, isPlaying: $isPlaying, isRecording: $isRecording, currentStep: $currentStep, bpm: $bpm, stepsPerBar: $stepsPerBar, bars: $bars, hasUnsavedChanges: $hasUnsavedChanges, samplePacks: $samplePacks, soundfonts: $soundfonts)';
+    return 'MusicStudioState(projectName: $projectName, tracks: $tracks, selectedTrackIndex: $selectedTrackIndex, isPlaying: $isPlaying, isRecording: $isRecording, currentStep: $currentStep, bpm: $bpm, stepsPerBar: $stepsPerBar, bars: $bars, hasUnsavedChanges: $hasUnsavedChanges, samplePacks: $samplePacks, soundfonts: $soundfonts, isLooping: $isLooping, isMetronomeEnabled: $isMetronomeEnabled)';
   }
 }

@@ -2,6 +2,8 @@ PODS:
   - audioplayers_darwin (0.0.1):
     - Flutter
     - FlutterMacOS
+  - bitsdojo_window_macos (0.0.1):
+    - FlutterMacOS
   - file_picker (0.0.1):
     - FlutterMacOS
   - flutter_midi_pro (0.0.1):
@@ -16,6 +18,7 @@ PODS:
 
 DEPENDENCIES:
   - audioplayers_darwin (from `Flutter/ephemeral/.symlinks/plugins/audioplayers_darwin/darwin`)
+  - bitsdojo_window_macos (from `Flutter/ephemeral/.symlinks/plugins/bitsdojo_window_macos/macos`)
   - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - flutter_midi_pro (from `Flutter/ephemeral/.symlinks/plugins/flutter_midi_pro/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
@@ -25,6 +28,8 @@ DEPENDENCIES:
 EXTERNAL SOURCES:
   audioplayers_darwin:
     :path: Flutter/ephemeral/.symlinks/plugins/audioplayers_darwin/darwin
+  bitsdojo_window_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/bitsdojo_window_macos/macos
   file_picker:
     :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
   flutter_midi_pro:
@@ -38,6 +43,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   audioplayers_darwin: 4f9ca89d92d3d21cec7ec580e78ca888e5fb68bd
+  bitsdojo_window_macos: 7959fb0ca65a3ccda30095c181ecb856fae48ea9
   file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
   flutter_midi_pro: 4c5d8ef49905c7d72d7dc94f5f110a0137d95252
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24

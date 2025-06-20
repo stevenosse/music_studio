@@ -358,6 +358,26 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
     _audioService.seekToStep(step);
   }
 
+  void toggleLooping() {
+    final bool newLoopingState = !value.isLooping;
+    value = value.copyWith(
+      isLooping: newLoopingState,
+      hasUnsavedChanges: true, 
+    );
+    // If AudioService needs to be informed about looping state for playback:
+    // _audioService.setLooping(newLoopingState);
+  }
+
+  void toggleMetronome() {
+    final bool newMetronomeState = !value.isMetronomeEnabled;
+    value = value.copyWith(
+      isMetronomeEnabled: newMetronomeState,
+      hasUnsavedChanges: true,
+    );
+    // If AudioService needs to be informed about metronome state:
+    // _audioService.setMetronomeEnabled(newMetronomeState);
+  }
+
   int _calculateTotalSteps() {
     int lastStep = 0;
     for (final track in value.tracks) {
