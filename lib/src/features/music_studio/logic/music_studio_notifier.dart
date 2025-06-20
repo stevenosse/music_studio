@@ -71,8 +71,7 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
       final Track targetTrack = currentTracks[trackIndex];
       final List<Note> updatedNotes = List<Note>.from(targetTrack.notes);
 
-      final existingNoteIndex = updatedNotes
-          .indexWhere((n) => n.step == note.step && n.pitch == note.pitch);
+      final existingNoteIndex = updatedNotes.indexWhere((n) => n.step == note.step && n.pitch == note.pitch);
 
       if (existingNoteIndex != -1) {
         return;
@@ -209,8 +208,7 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
 
     notesToDeleteByTrack.forEach((trackIndex, ids) {
       final track = tracks[trackIndex];
-      final updatedNotes =
-          track.notes.where((n) => !ids.contains(n.id)).toList();
+      final updatedNotes = track.notes.where((n) => !ids.contains(n.id)).toList();
       tracks[trackIndex] = track.copyWith(notes: updatedNotes);
       changed = true;
     });
@@ -230,47 +228,41 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
         color: const Color(0xFF9C27B0), // Purple
         samplePath: 'assets/soundfonts/Piano.sf2',
         audioSourceType: AudioSourceType.soundfont,
-        steps:
-            List.generate(32, (index) => const SequencerStep(isActive: false)),
+        steps: List.generate(32, (index) => const SequencerStep(isActive: false)),
       ),
       Track(
         id: 'kick',
         name: 'Kick',
         color: const Color(0xFF2196F3),
         samplePath: Assets.samples.aSAINT6RonnyKick,
-        steps:
-            List.generate(32, (index) => const SequencerStep(isActive: false)),
+        steps: List.generate(32, (index) => const SequencerStep(isActive: false)),
       ),
       Track(
         id: 'snare',
         name: 'Snare',
         color: const Color(0xFFFF5722),
         samplePath: Assets.samples.aSAINT6PopSnare1,
-        steps:
-            List.generate(32, (index) => const SequencerStep(isActive: false)),
+        steps: List.generate(32, (index) => const SequencerStep(isActive: false)),
       ),
       Track(
         id: 'clap',
         name: 'Clap',
         color: const Color(0xFF4CAF50),
         samplePath: Assets.samples.aSAINT6BounceClap,
-        steps:
-            List.generate(32, (index) => const SequencerStep(isActive: false)),
+        steps: List.generate(32, (index) => const SequencerStep(isActive: false)),
       ),
       Track(
         id: 'hihat',
         name: 'Hi-hat',
         color: const Color(0xFFFFEB3B),
         samplePath: Assets.samples.aSAINT6808HiHat1,
-        steps:
-            List.generate(32, (index) => const SequencerStep(isActive: false)),
+        steps: List.generate(32, (index) => const SequencerStep(isActive: false)),
       ),
     ];
 
     for (final track in defaultTracks) {
       if (track.samplePath != null) {
-        await _audioService.loadTrackSample(
-            track.id, track.samplePath!, track.audioSourceType);
+        await _audioService.loadTrackSample(track.id, track.samplePath!, track.audioSourceType);
       }
     }
 
@@ -284,18 +276,15 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
     final manifestContent = await rootBundle.loadString('AssetManifest.json');
     final Map<String, dynamic> manifestMap = json.decode(manifestContent);
 
-    final soundfontPaths = manifestMap.keys
-        .where((String key) => key.startsWith('assets/soundfonts/'))
-        .toList();
+    final soundfontPaths = manifestMap.keys.where((String key) => key.startsWith('assets/soundfonts/')).toList();
 
-    final sampleAssets = manifestMap.keys
-        .where((String key) => key.startsWith('assets/samples/'))
-        .toList();
+    final sampleAssets = manifestMap.keys.where((String key) => key.startsWith('assets/samples/')).toList();
 
     final Map<String, List<String>> packsData = {};
     for (var asset in sampleAssets) {
       final parts = asset.split('/');
-      if (parts.length > 3) { // assets/samples/PACK_NAME/sample.wav
+      if (parts.length > 3) {
+        // assets/samples/PACK_NAME/sample.wav
         final packName = parts[2];
         if (!packsData.containsKey(packName)) {
           packsData[packName] = [];
@@ -362,7 +351,7 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
     final bool newLoopingState = !value.isLooping;
     value = value.copyWith(
       isLooping: newLoopingState,
-      hasUnsavedChanges: true, 
+      hasUnsavedChanges: true,
     );
     // If AudioService needs to be informed about looping state for playback:
     // _audioService.setLooping(newLoopingState);
@@ -382,8 +371,7 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
     int lastStep = 0;
     for (final track in value.tracks) {
       if (track.notes.isNotEmpty) {
-        final maxEndStep =
-            track.notes.map((n) => n.step + n.duration).reduce(max);
+        final maxEndStep = track.notes.map((n) => n.step + n.duration).reduce(max);
         if (maxEndStep > lastStep) {
           lastStep = maxEndStep;
         }
@@ -639,8 +627,7 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
 
       for (final track in tracks) {
         if (track.samplePath != null) {
-          await _audioService.loadTrackSample(
-              track.id, track.samplePath!, track.audioSourceType);
+          await _audioService.loadTrackSample(track.id, track.samplePath!, track.audioSourceType);
         }
       }
 
@@ -674,9 +661,289 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
     await _loadDefaultTracks();
   }
 
+  /// Loads a demo drill-style beat with 8 bars and trap/drill elements
+  Future<void> loadDemoSong() async {
+    // Clear any existing notes first
+    final tracks = List<Track>.from(value.tracks);
+    for (int i = 0; i < tracks.length; i++) {
+      tracks[i] = tracks[i].copyWith(notes: []);
+    }
+    _trackRepository.updateTracks(tracks);
+    
+    // Set BPM to 140 for a drill beat
+    setBpm(140);
+    
+    // Set to 8 bars for a longer pattern
+    setBars(8);
+    
+    // Define a dark D# minor chord progression for drill style
+    // D#m9 | Bmaj7 | G#m11 | C#7b9 | D#m9 | Bmaj7 | G#m11 | C#7b9
+    // Each chord will be 12 steps (1 bar) in length
+    
+    // Piano is track index 0
+    final pianoTrackIndex = 0;
+    final pianoColor = tracks[pianoTrackIndex].color;
+    
+    // Define MIDI note numbers
+    // C = 48, C# = 49, D = 50, D# = 51, E = 52, F = 53, F# = 54, G = 55, G# = 56, A = 57, A# = 58, B = 59
+    // Add 12 for each octave up, subtract 12 for each octave down
+    
+    // Define the chord voicings as specified
+    final leftHandChords = [
+      // Bar 1 - D#m9: D#2, A#2
+      [27, 34], // D#2 = 27, A#2 = 34
+      // Bar 2 - Bmaj7: B2, F#3
+      [35, 42], // B2 = 35, F#3 = 42
+      // Bar 3 - G#m11: G#2, D#3
+      [32, 39], // G#2 = 32, D#3 = 39
+      // Bar 4 - C#7b9: C#2, G#2
+      [25, 32], // C#2 = 25, G#2 = 32
+      // Repeat for bars 5-8
+      [27, 34], // D#m9
+      [35, 42], // Bmaj7
+      [32, 39], // G#m11
+      [25, 32], // C#7b9
+    ];
+    
+    final rightHandChords = [
+      // Bar 1 - D#m9: F#4, A#4, C#5, F5
+      [66, 70, 73, 77], // F#4 = 66, A#4 = 70, C#5 = 73, F5 = 77
+      // Bar 2 - Bmaj7: A#3, D#4, F#4, A#4
+      [58, 63, 66, 70], // A#3 = 58, D#4 = 63, F#4 = 66, A#4 = 70
+      // Bar 3 - G#m11: B3, D#4, F#4, A#4
+      [59, 63, 66, 70], // B3 = 59, D#4 = 63, F#4 = 66, A#4 = 70
+      // Bar 4 - C#7b9: B3, D#4, F#4, A4
+      [59, 63, 66, 69], // B3 = 59, D#4 = 63, F#4 = 66, A4 = 69
+      // Repeat for bars 5-8
+      [66, 70, 73, 77], // D#m9
+      [58, 63, 66, 70], // Bmaj7
+      [59, 63, 66, 70], // G#m11
+      [59, 63, 66, 69], // C#7b9
+    ];
+    
+    // Add all chords
+    for (int bar = 0; bar < 8; bar++) {
+      // Add left hand (bass) notes
+      for (int i = 0; i < leftHandChords[bar].length; i++) {
+        addNote(Note(
+          id: 'lh_${bar}_$i',
+          pitch: leftHandChords[bar][i],
+          step: bar * 12,
+          duration: 12,
+          velocity: 110,
+          trackIndex: pianoTrackIndex,
+          color: pianoColor,
+        ));
+      }
+      
+      // Add right hand notes
+      for (int i = 0; i < rightHandChords[bar].length; i++) {
+        addNote(Note(
+          id: 'rh_${bar}_$i',
+          pitch: rightHandChords[bar][i],
+          step: bar * 12,
+          duration: 12,
+          velocity: 95, // Slightly softer for the upper voicings
+          trackIndex: pianoTrackIndex,
+          color: pianoColor,
+        ));
+      }
+    }
+    
+    // Add drill-style drum patterns based on the specified patterns
+    
+    // Kick drum (track index 1) - Punchy, syncopated pattern
+    // Pattern: [X---X-------X--X-] (Hit on 1, 5, 12, 15)
+    final kickTrackIndex = 1;
+    final kickColor = tracks[kickTrackIndex].color;
+    
+    // Convert the pattern to step indices (0-based)
+    // In a 16-step pattern: 0, 4, 11, 14 (zero-indexed)
+    final kickSteps = [0, 4, 11, 14];
+    
+    for (int bar = 0; bar < 8; bar++) {
+      for (final kickStep in kickSteps) {
+        // Convert from 16-step pattern to 12-step bar
+        // 16 steps in the pattern map to 12 steps in our sequencer
+        final step = bar * 12 + ((kickStep * 12) ~/ 16);
+        
+        addNote(Note(
+          id: 'kick_${bar}_$kickStep',
+          pitch: 36, // Standard kick drum MIDI note
+          step: step,
+          duration: 1,
+          velocity: 115, // Punchy kick
+          trackIndex: kickTrackIndex,
+          color: kickColor,
+        ));
+      }
+    }
+    
+    // Snare drum (track index 2) - Classic Drill Snare on Beat 3
+    // Pattern: [----X-------X---] (Hit on step 5 and 13)
+    final snareTrackIndex = 2;
+    final snareColor = tracks[snareTrackIndex].color;
+    
+    // Convert to 0-based indices: 4, 12
+    final snareSteps = [4, 12];
+    
+    for (int bar = 0; bar < 8; bar++) {
+      for (final snareStep in snareSteps) {
+        // Convert from 16-step pattern to 12-step bar
+        final step = bar * 12 + ((snareStep * 12) ~/ 16);
+        
+        addNote(Note(
+          id: 'snare_${bar}_$snareStep',
+          pitch: 38, // Snare drum
+          step: step,
+          duration: 1,
+          velocity: 105, // Sharp snare
+          trackIndex: snareTrackIndex,
+          color: snareColor,
+        ));
+      }
+      
+      // Add rim shot variation on certain bars
+      if (bar % 2 == 1) {
+        final rimStep = bar * 12 + ((14 * 12) ~/ 16); // Step 14 in 16-step pattern
+        addNote(Note(
+          id: 'rim_${bar}_$rimStep',
+          pitch: 37, // Rim shot
+          step: rimStep,
+          duration: 1,
+          velocity: 85,
+          trackIndex: snareTrackIndex,
+          color: snareColor,
+        ));
+      }
+    }
+    
+    // Hi-hat (track index 4) - Triplet drill bounce
+    // Base pattern: [X---X---X---X---] with ghosted triplets
+    final hihatTrackIndex = 4;
+    final hihatColor = tracks[hihatTrackIndex].color;
+    
+    // Main hi-hat pattern (steps 0, 4, 8, 12 in 16-step pattern)
+    final hihatMainSteps = [0, 4, 8, 12];
+    
+    // Triplet/ghost notes (steps 3, 5, 11 in 16-step pattern)
+    final hihatTripletSteps = [3, 5, 11];
+    
+    for (int bar = 0; bar < 8; bar++) {
+      // Add main hi-hat pattern
+      for (final hihatStep in hihatMainSteps) {
+        // Convert from 16-step pattern to 12-step bar
+        final step = bar * 12 + ((hihatStep * 12) ~/ 16);
+        
+        addNote(Note(
+          id: 'hihat_main_${bar}_$hihatStep',
+          pitch: 42, // Closed hi-hat
+          step: step,
+          duration: 1,
+          velocity: 100, // Accented
+          trackIndex: hihatTrackIndex,
+          color: hihatColor,
+        ));
+      }
+      
+      // Add triplet/ghost notes with lower velocity
+      for (final tripletStep in hihatTripletSteps) {
+        // Convert from 16-step pattern to 12-step bar
+        final step = bar * 12 + ((tripletStep * 12) ~/ 16);
+        
+        addNote(Note(
+          id: 'hihat_ghost_${bar}_$tripletStep',
+          pitch: 42, // Closed hi-hat
+          step: step,
+          duration: 1,
+          velocity: 60, // Ghosted/lower velocity
+          trackIndex: hihatTrackIndex,
+          color: hihatColor,
+        ));
+      }
+      
+      // Add triplet rolls on certain bars (bars 3, 7)
+      if (bar == 3 || bar == 7) {
+        // Add a triplet roll (3 quick hits)
+        for (int i = 0; i < 3; i++) {
+          final rollStep = bar * 12 + 9 + (i * 0.33).round(); // Around beat 3
+          addNote(Note(
+            id: 'hihat_roll_${bar}_$i',
+            pitch: 42, // Closed hi-hat
+            step: rollStep,
+            duration: 1,
+            velocity: 70 + (i * 5), // Increasing velocity
+            trackIndex: hihatTrackIndex,
+            color: hihatColor,
+          ));
+        }
+      }
+      
+      // Add open hi-hats for variation
+      if (bar % 4 == 2) {
+        final openStep = bar * 12 + ((10 * 12) ~/ 16); // Step 10 in 16-step pattern
+        addNote(Note(
+          id: 'open_hihat_${bar}_$openStep',
+          pitch: 46, // Open hi-hat
+          step: openStep,
+          duration: 1,
+          velocity: 90,
+          trackIndex: hihatTrackIndex,
+          color: hihatColor,
+        ));
+      }
+    }
+    
+    // Clap/Percussion (track index 3) - typical drill percussion
+    final clapTrackIndex = 3;
+    final clapColor = tracks[clapTrackIndex].color;
+    
+    // Add claps on specific beats
+    for (int bar = 0; bar < 8; bar++) {
+      // Standard claps reinforcing snares
+      addNote(Note(
+        id: 'clap_${bar}_1',
+        pitch: 39, // Clap
+        step: bar * 12 + 3,
+        duration: 1,
+        velocity: 90,
+        trackIndex: clapTrackIndex,
+        color: clapColor,
+      ));
+      
+      addNote(Note(
+        id: 'clap_${bar}_2',
+        pitch: 39,
+        step: bar * 12 + 9,
+        duration: 1,
+        velocity: 90,
+        trackIndex: clapTrackIndex,
+        color: clapColor,
+      ));
+      
+      // Add percussion fills in bars 4 and 8
+      if (bar == 3 || bar == 7) {
+        for (int i = 0; i < 4; i++) {
+          addNote(Note(
+            id: 'perc_${bar}_$i',
+            pitch: 67, // High percussion
+            step: bar * 12 + 8 + i,
+            duration: 1,
+            velocity: 70 + (i * 5),
+            trackIndex: clapTrackIndex,
+            color: clapColor,
+          ));
+        }
+      }
+    }
+    
+    // Set project name
+    value = value.copyWith(projectName: 'D# Minor Jazz-Drill - 140 BPM');
+  }
+
   @override
   void dispose() {
-    _audioService.dispose().ignore();
+    _audioService.dispose();
     super.dispose();
   }
 }

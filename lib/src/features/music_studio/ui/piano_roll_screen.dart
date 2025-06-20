@@ -383,7 +383,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
     // Space to play/pause
     if (event.logicalKey == LogicalKeyboardKey.space) {
       if (musicStudioNotifier.isPlaying) {
-        musicStudioNotifier.pause();
+        musicStudioNotifier.stop();
       } else {
         musicStudioNotifier.play();
       }

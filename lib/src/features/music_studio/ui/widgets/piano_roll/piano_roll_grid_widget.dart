@@ -38,6 +38,9 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
   int? _originalStepAtResizeStart;
   int? _originalDurationAtResizeStart;
 
+  int? _lastDrawnPitch;
+  int? _lastDrawnStep;
+
   bool get _isSelectionBoxActive =>
       _selectionBoxStart != null && _selectionBoxEnd != null;
 
@@ -236,7 +239,18 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
         }
         break;
       case PianoRollTool.draw:
-        // TODO: Implement pan-to-draw note logic or other drag behavior for Draw tool
+        // Create a note at the starting position when drawing
+        final gridPos = notifier.screenToGrid(localPosition);
+        if (gridPos.isValid) {
+          _createNoteAtPosition(gridPos, context);
+          
+          // Store the last created note's pitch to avoid creating multiple notes
+          // on the same pitch while dragging
+          setState(() {
+            _lastDrawnPitch = gridPos.pitch;
+            _lastDrawnStep = gridPos.step.round();
+          });
+        }
         break;
       case PianoRollTool.mute:
         // Panning with mute tool probably does nothing, or could be used for drag-muting.
@@ -257,6 +271,22 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
       setState(() {
         _selectionBoxEnd = details.localPosition;
       });
+    } else if (notifier.value.tool == PianoRollTool.draw) {
+      // Handle drawing notes while dragging in draw mode
+      final gridPos = notifier.screenToGrid(details.localPosition);
+      if (gridPos.isValid) {
+        // Only create a new note if we've moved to a different pitch or step
+        // This prevents creating multiple notes at the same position
+        if (_lastDrawnPitch != gridPos.pitch || 
+            _lastDrawnStep != gridPos.step.round()) {
+          _createNoteAtPosition(gridPos, context);
+          
+          setState(() {
+            _lastDrawnPitch = gridPos.pitch;
+            _lastDrawnStep = gridPos.step.round();
+          });
+        }
+      }
     }
   }
 
@@ -268,6 +298,12 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
       notifier.stopDragging();
     } else if (_isSelectionBoxActive) {
       _finalizeSelectionBox(context);
+    } else if (notifier.value.tool == PianoRollTool.draw) {
+      // Reset drawing state when the pan gesture ends
+      setState(() {
+        _lastDrawnPitch = null;
+        _lastDrawnStep = null;
+      });
     }
   }
 

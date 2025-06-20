@@ -21,10 +21,10 @@ class AppTheme {
         color: colors.surfaceContainerHighest,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        shadowColor: colors.shadow.withOpacity(0.2),
+        shadowColor: colors.shadow.withValues(alpha: 0.2),
       ),
       dividerTheme: DividerThemeData(
-        color: colors.outlineVariant.withOpacity(0.5),
+        color: colors.outlineVariant.withValues(alpha: 0.5),
         thickness: 1,
       ),
       iconTheme: IconThemeData(
@@ -63,7 +63,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: colors.outline.withOpacity(0.5)),
+          borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.5)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),

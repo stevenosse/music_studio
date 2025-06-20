@@ -285,6 +285,7 @@ class ProjectActionsWidget extends StatelessWidget {
         onSelected: (value) {
           if (value == 'new') notifier.newProject();
           if (value == 'load') notifier.loadProject();
+          if (value == 'load_demo_project') notifier.loadDemoSong();
           if (value == 'save') notifier.saveProject();
         },
         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -295,6 +296,10 @@ class ProjectActionsWidget extends StatelessWidget {
           const PopupMenuItem<String>(
             value: 'load',
             child: ListTile(leading: Icon(IconsaxPlusLinear.folder_open), title: Text('Load Project')),
+          ),
+          const PopupMenuItem<String>(
+            value: 'load_demo_project',
+            child: ListTile(leading: Icon(IconsaxPlusLinear.music), title: Text('Load Demo Project')),
           ),
           const PopupMenuItem<String>(
             value: 'save',

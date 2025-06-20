@@ -25,6 +25,9 @@ class AudioService {
   final Map<String, String> _trackSamplePaths = {};
   final Map<String, AudioSourceType> _trackSourceTypes = {};
   final Map<String, int> _playerIndexes = {};
+  
+  // Pre-loaded audio sources for reduced latency
+  final Map<String, Source> _preloadedSources = {};
 
   Timer? _sequencerTimer;
   bool _isPlaying = false;
@@ -72,8 +75,26 @@ class AudioService {
       } else {
         // Create multiple audio players for this track to allow overlapping sounds
         if (!_audioPlayers.containsKey(trackId)) {
-          _audioPlayers[trackId] = List.generate(4, (_) => AudioPlayer());
+          // Create players with low latency settings
+          _audioPlayers[trackId] = List.generate(8, (_) {
+            final player = AudioPlayer();
+            // Set low latency mode where available
+            player.setPlayerMode(PlayerMode.lowLatency);
+            return player;
+          });
           _playerIndexes[trackId] = 0;
+          
+          // Preload the audio source to reduce latency
+          if (sourceType == AudioSourceType.asset) {
+            _preloadedSources[trackId] = AssetSource(samplePath.replaceFirst('assets/', ''));
+          } else if (sourceType == AudioSourceType.deviceFile) {
+            _preloadedSources[trackId] = DeviceFileSource(samplePath);
+          }
+          
+          // Pre-buffer audio for all players
+          for (final player in _audioPlayers[trackId]!) {
+            await player.setSource(_preloadedSources[trackId]!);
+          }
         }
       }
 
@@ -110,12 +131,11 @@ class AudioService {
           break;
         case AudioSourceType.asset:
         case AudioSourceType.deviceFile:
-          final samplePath = _trackSamplePaths[trackId];
           final players = _audioPlayers[trackId];
 
-          if (samplePath == null || players == null) {
+          if (players == null) {
             AppLogger().warning(
-                'Track $trackId ($sourceType) is missing sample path or players.');
+                'Track $trackId ($sourceType) is missing players.');
             return;
           }
 
@@ -129,13 +149,12 @@ class AudioService {
           final player = players[currentIndex];
           _playerIndexes[trackId] = (currentIndex + 1) % players.length;
 
-          await player.setVolume(volume);
-          await player.setPlaybackRate(playbackRate);
-
-          final source = sourceType == AudioSourceType.asset
-              ? AssetSource(samplePath.replaceFirst('assets/', ''))
-              : DeviceFileSource(samplePath);
-          await player.play(source);
+          // Set volume and playback rate without awaiting to reduce latency
+          player.setVolume(volume);
+          player.setPlaybackRate(playbackRate);
+          
+          // Use the pre-loaded source or resume playback for minimal latency
+          player.resume();
           break;
       }
     } catch (e, s) {
@@ -262,33 +281,48 @@ class AudioService {
   }
 
   void _startSequencer() {
+    // Calculate a slightly shorter duration to compensate for processing time
+    // This helps ensure audio playback happens closer to the beat
+    final adjustedDuration = math.max(stepDuration - 15, 1); // 15ms compensation, minimum 1ms
+    
     _sequencerTimer = Timer.periodic(
-      Duration(milliseconds: stepDuration),
+      Duration(milliseconds: adjustedDuration),
       (timer) => _onSequencerTick(),
     );
   }
 
   void _onSequencerTick() {
     final tracks = _trackRepository.tracks;
+    final nextStep = (_currentStep + 1) % _totalSteps;
     
-    // Play active steps for each track first to minimize latency
+    // First, prepare the next step's audio to reduce latency
+    // This technique is called "look-ahead scheduling"
+    _prepareNextStepAudio(tracks, nextStep);
+    
+    // Play active steps for each track with minimal latency
     for (final track in tracks) {
-      if (!track.isMuted && _currentStep < track.steps.length) {
-        final step = track.steps[_currentStep];
-        if (step.isActive) {
-          playTrackSample(
-            track.id,
-            volume: track.volume * step.velocity,
-          );
+      if (!track.isMuted) {
+        // Play step sequencer hits if within track's step range
+        if (_currentStep < track.steps.length) {
+          final step = track.steps[_currentStep];
+          if (step.isActive) {
+            // Fire and forget - don't await playback
+            playTrackSample(
+              track.id,
+              volume: track.volume * step.velocity,
+            );
+          }
         }
 
-        // Also play any notes at this step for piano roll tracks
+        // Play any notes at this step for piano roll tracks
+        // Notes can be anywhere within the total song length
         for (final note in track.notes) {
           if (note.step == _currentStep) {
             if (track.samplePath != null) {
+              // Fire and forget - don't await playback
               playTrackSample(
                 track.id,
-                pitch: note.pitch, // Add pitch here
+                pitch: note.pitch,
                 volume: track.volume * (note.velocity / 127.0),
               );
             } else {
@@ -299,7 +333,7 @@ class AudioService {
       }
     }
 
-    // Update UI after audio playback
+    // Update UI after triggering audio playback
     currentStepNotifier.value = _currentStep;
 
     _currentStep++;
@@ -307,6 +341,28 @@ class AudioService {
     // Always loop back to start if at end
     if (_currentStep >= _totalSteps) {
       _currentStep = 0;
+    }
+  }
+  
+  // Look-ahead scheduling to prepare audio for the next step
+  void _prepareNextStepAudio(List<Track> tracks, int step) {
+    // This method prepares audio players for the next step
+    // but doesn't actually play them yet
+    for (final track in tracks) {
+      if (!track.isMuted && step < track.steps.length) {
+        final sourceType = _trackSourceTypes[track.id];
+        if (sourceType == AudioSourceType.asset || sourceType == AudioSourceType.deviceFile) {
+          final players = _audioPlayers[track.id];
+          if (players != null) {
+            // Find the next player that will be used
+            final nextIndex = (_playerIndexes[track.id] ?? 0);
+            final nextPlayer = players[nextIndex];
+            
+            // Ensure it's ready to play instantly when needed
+            nextPlayer.setSource(_preloadedSources[track.id]!);
+          }
+        }
+      }
     }
   }
 
