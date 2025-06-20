@@ -3,37 +3,48 @@ import 'dart:math' as math;
 import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import '../../../../core/theme/dimens.dart';
 import '../../models/note.dart';
+import '../music_studio_notifier.dart';
 import 'piano_roll_state.dart';
 import 'note_drag_data.dart'; // Added import
 
 class PianoRollNotifier extends ValueNotifier<PianoRollState> {
-  PianoRollNotifier() : super(const PianoRollState());
+  PianoRollNotifier(this._musicStudioNotifier) : super(const PianoRollState());
+
+  final MusicStudioNotifier _musicStudioNotifier;
 
   // Grid calculations
   double get cellWidth => Dimens.gridCellWidth * value.zoomLevel;
   double get keyHeight => Dimens.pianoRollKeyHeight;
-  double get totalWidth => cellWidth * value.totalSteps;
+  double get totalWidth => cellWidth * totalSteps;
+
+  int get stepsPerBar => _musicStudioNotifier.value.stepsPerBar;
+
+  int get totalSteps =>
+      _musicStudioNotifier.value.bars * _musicStudioNotifier.value.stepsPerBar;
   double get totalHeight => keyHeight * value.totalKeys;
 
   // Snap to grid functionality
+  double get snapValue {
+    if (!value.isSnapEnabled || value.snapResolution.divisionsPerBar == 0) {
+      return 0;
+    }
+    return stepsPerBar / value.snapResolution.divisionsPerBar.toDouble();
+  }
+
   double snapToGrid(double position) {
-    if (!value.isSnapEnabled || value.snapResolution == SnapResolution.none) {
+    if (!value.isSnapEnabled || snapValue == 0) {
       return position;
     }
     
-    final snapValue = value.snapValue;
     return (position / snapValue).round() * snapValue;
   }
 
   // Convert screen position to grid coordinates
-  GridPosition screenToGrid(Offset screenPosition) {
-    // The dx is an absolute coordinate from the gesture on the horizontally-scrolling canvas.
-    // The dy is relative to the vertical viewport, so we add the vertical scroll offset.
-    final absoluteX = screenPosition.dx;
-    final absoluteY = screenPosition.dy + value.verticalScrollOffset;
-
-    final step = absoluteX / cellWidth;
-    final keyIndex = (absoluteY / keyHeight).floor();
+  GridPosition screenToGrid(Offset localPosition) {
+    // localPosition.dx is relative to the start of the scrollable content (full width).
+    // localPosition.dy is relative to the top of the scrollable content (full height).
+    final step = localPosition.dx / cellWidth;
+    final keyIndex = (localPosition.dy / keyHeight).floor();
 
     // Calculate pitch from the top of the grid
     final pitch = value.totalKeys - 1 - keyIndex + value.lowestNote;
@@ -99,9 +110,13 @@ class PianoRollNotifier extends ValueNotifier<PianoRollState> {
   }
 
   // Note selection
-  void selectNote(String noteId) {
-    final newSelection = Set<String>.from(value.selectedNotes)..add(noteId);
-    value = value.copyWith(selectedNotes: newSelection);
+  void selectNote(String noteId, {bool exclusive = false}) {
+    if (exclusive) {
+      value = value.copyWith(selectedNotes: {noteId});
+    } else {
+      final newSelection = Set<String>.from(value.selectedNotes)..add(noteId);
+      value = value.copyWith(selectedNotes: newSelection);
+    }
   }
 
   void deselectNote(String noteId) {
@@ -135,20 +150,15 @@ class PianoRollNotifier extends ValueNotifier<PianoRollState> {
 
   // Selection box
   Set<String> getNotesInSelectionBox(
-    Offset startPosition,
-    Offset endPosition,
+    Offset localStartPosition,
+    Offset localEndPosition,
     List<Note> allNotes,
   ) {
-    // The gesture position's dx is absolute, dy is relative. We adjust dy to get
-    // absolute coordinates for comparison with the absolute note positions.
-    final adjustedStart =
-        startPosition.translate(0, value.verticalScrollOffset);
-    final adjustedEnd = endPosition.translate(0, value.verticalScrollOffset);
-
-    final left = math.min(adjustedStart.dx, adjustedEnd.dx);
-    final right = math.max(adjustedStart.dx, adjustedEnd.dx);
-    final top = math.min(adjustedStart.dy, adjustedEnd.dy);
-    final bottom = math.max(adjustedStart.dy, adjustedEnd.dy);
+    // localStartPosition and localEndPosition are already relative to the full scrollable content.
+    final left = math.min(localStartPosition.dx, localEndPosition.dx);
+    final right = math.max(localStartPosition.dx, localEndPosition.dx);
+    final top = math.min(localStartPosition.dy, localEndPosition.dy);
+    final bottom = math.max(localStartPosition.dy, localEndPosition.dy);
 
     final selectedNoteIds = <String>{};
     
@@ -191,11 +201,20 @@ class PianoRollNotifier extends ValueNotifier<PianoRollState> {
     );
   }
 
+  void updateDraggedNotesPreview(List<Note> notes) {
+    final previewMap = {for (var note in notes) note.id: note};
+    value = value.copyWith(draggedNotesPreview: previewMap);
+  }
+
   void stopDragging() {
+    if (value.draggedNotesPreview != null && value.draggedNotesPreview!.isNotEmpty) {
+      _musicStudioNotifier.updateMultipleNotes(value.draggedNotesPreview!.values.toList());
+    }
     value = value.copyWith(
       isDragging: false,
       dragStartPosition: null,
-      dragStartNoteData: null, // Clear dragStartNoteData
+      dragStartNoteData: null,
+      draggedNotesPreview: null, // Clear the preview
     );
   }
 

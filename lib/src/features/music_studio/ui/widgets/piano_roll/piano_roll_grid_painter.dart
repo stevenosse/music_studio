@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../logic/piano_roll/piano_roll_state.dart';
 
 class PianoRollGridPainter extends CustomPainter {
   final double cellWidth;
@@ -11,6 +12,7 @@ class PianoRollGridPainter extends CustomPainter {
   final double loopStart;
   final double loopEnd;
   final bool isLooping;
+  final SnapResolution snapResolution;
 
   PianoRollGridPainter({
     required this.cellWidth,
@@ -23,6 +25,7 @@ class PianoRollGridPainter extends CustomPainter {
     required this.loopStart,
     required this.loopEnd,
     required this.isLooping,
+    required this.snapResolution,
   });
 
   @override
@@ -77,25 +80,33 @@ class PianoRollGridPainter extends CustomPainter {
     final beatPaint = Paint()
       ..color = Colors.black.withValues(alpha: 0.2)
       ..strokeWidth = 1.0;
-    final stepPaint = Paint()
+    final subdivisionPaint = Paint()
       ..color = Colors.black.withValues(alpha: 0.1)
       ..strokeWidth = 1.0;
+
+    final stepsPerBeat = stepsPerBar / 4.0;
+    final double subdivisionSize = (snapResolution.divisionsPerBar > 0)
+        ? stepsPerBar / snapResolution.divisionsPerBar.toDouble()
+        : 0;
 
     for (int i = 0; i <= totalSteps; i++) {
       final x = i * cellWidth;
       final isBarStart = i % stepsPerBar == 0;
-      final isBeatStart = i % (stepsPerBar / 4) == 0;
+      final isBeatStart = i % stepsPerBeat == 0;
 
-      final Paint paint;
-      if (isBarStart) {
-        paint = barPaint;
-      } else if (isBeatStart) {
-        paint = beatPaint;
-      } else {
-        paint = stepPaint;
+      bool isSubdivision = false;
+      if (subdivisionSize > 0) {
+        // Use a small tolerance for floating point modulo operations
+        isSubdivision = (i % subdivisionSize).abs() < 0.001;
       }
 
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      if (isBarStart) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), barPaint);
+      } else if (isBeatStart) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), beatPaint);
+      } else if (isSubdivision) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), subdivisionPaint);
+      }
     }
   }
 
@@ -171,6 +182,7 @@ class PianoRollGridPainter extends CustomPainter {
         playheadPosition != oldDelegate.playheadPosition ||
         loopStart != oldDelegate.loopStart ||
         loopEnd != oldDelegate.loopEnd ||
-        isLooping != oldDelegate.isLooping;
+        isLooping != oldDelegate.isLooping ||
+        snapResolution != oldDelegate.snapResolution;
   }
 }

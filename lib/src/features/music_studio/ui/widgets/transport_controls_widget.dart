@@ -52,7 +52,7 @@ class TransportControlsWidget extends StatelessWidget {
               
               // Stop Button
               IconButton(
-                onPressed: () async => await notifier.stop(),
+                onPressed: notifier.stop,
                 icon: Icon(
                   IconsaxPlusLinear.stop,
                   size: Dimens.iconSizeM,

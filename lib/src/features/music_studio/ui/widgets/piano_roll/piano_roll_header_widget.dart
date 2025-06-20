@@ -91,7 +91,7 @@ class _TimeRulerPainter extends CustomPainter {
     final paint = Paint()
       ..color = theme.colorScheme.surface
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
   }
 

@@ -137,7 +137,7 @@ class _SamplePackExplorerWidgetState extends State<SamplePackExplorerWidget> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8.0),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withValues(alpha: 102),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 102),
         borderRadius: BorderRadius.circular(Dimens.radiusMedium),
         border: Border.all(
           color: theme.colorScheme.outline.withValues(alpha: 51),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:mstudio/src/features/music_studio/logic/music_studio_notifier.dart';
+import 'package:provider/provider.dart';
+
+import 'package:mstudio/src/core/theme/dimens.dart';
 import 'package:mstudio/src/features/music_studio/logic/piano_roll/piano_roll_notifier.dart';
 import 'package:mstudio/src/features/music_studio/logic/piano_roll/piano_roll_state.dart';
-import 'package:provider/provider.dart';
-import 'package:mstudio/src/core/theme/dimens.dart';
 
 class PianoRollToolbarWidget extends StatelessWidget {
   final VoidCallback onQuantize;
@@ -22,7 +24,6 @@ class PianoRollToolbarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-
     return Container(
       height: 48,
       decoration: BoxDecoration(
@@ -35,38 +36,25 @@ class PianoRollToolbarWidget extends StatelessWidget {
         ),
       ),
       child: Consumer<PianoRollNotifier>(
-        builder: (context, notifier, child) {
+        builder: (context, pianoRollNotifier, child) {
+          final musicStudioNotifier = context.watch<MusicStudioNotifier>();
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                // Mode toggle
-                _buildModeToggle(context, notifier),
-
+                _buildModeToggle(context, pianoRollNotifier),
                 const SizedBox(width: 16),
-
-                // Snap settings
-                _buildSnapSettings(context, notifier),
-
+                _buildSnapSettings(context, pianoRollNotifier),
                 const SizedBox(width: 16),
-
-                // Quantize button
                 _buildQuantizeButton(context),
-
-                const Spacer(),
-
-                // Zoom controls
-                _buildZoomControls(context, notifier),
-
-                const SizedBox(width: 8),
-
-                // Zoom slider
-                _buildZoomSlider(context, notifier),
-
                 const SizedBox(width: 16),
-
-                // Zoom level indicator
-                _buildZoomIndicator(context, notifier),
+                _buildBarCounter(context, musicStudioNotifier),
+                const Spacer(),
+                _buildZoomControls(context, pianoRollNotifier),
+                const SizedBox(width: 8),
+                _buildZoomSlider(context, pianoRollNotifier),
+                const SizedBox(width: 16),
+                _buildZoomIndicator(context, pianoRollNotifier),
               ],
             ),
           );
@@ -87,7 +75,6 @@ class PianoRollToolbarWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _ToolButton(
-            context,
             icon: Icons.mouse,
             label: 'Select',
             isSelected: notifier.value.tool == PianoRollTool.select,
@@ -95,7 +82,6 @@ class PianoRollToolbarWidget extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           _ToolButton(
-            context,
             icon: Icons.edit,
             label: 'Draw',
             isSelected: notifier.value.tool == PianoRollTool.draw,
@@ -103,7 +89,6 @@ class PianoRollToolbarWidget extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           _ToolButton(
-            context,
             icon: Icons.volume_off,
             label: 'Mute',
             isSelected: notifier.value.tool == PianoRollTool.mute,
@@ -114,93 +99,45 @@ class PianoRollToolbarWidget extends StatelessWidget {
     );
   }
 
-  Widget _ToolButton(BuildContext context, {
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onPressed,
-  }) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: isSelected
-          ? theme.colorScheme.primary.withValues(alpha: 0.1)
-          : Colors.transparent,
-      borderRadius: BorderRadius.circular(7),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(7),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurface,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildSnapSettings(BuildContext context, PianoRollNotifier notifier) {
     final theme = Theme.of(context);
+    final isSnapEnabled = notifier.value.isSnapEnabled;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Snap toggle
-        IconButton(
-          onPressed: () => notifier.toggleSnap(),
-          icon: Icon(
-            notifier.value.snapResolution != SnapResolution.none
-                ? Icons.grid_on
-                : Icons.grid_off,
-            color: notifier.value.snapResolution != SnapResolution.none
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-          tooltip: 'Snap to Grid',
+    return PopupMenuButton<SnapResolution>(
+      onSelected: (resolution) => notifier.setSnapResolution(resolution),
+      itemBuilder: (context) => SnapResolution.values
+          .map((resolution) => PopupMenuItem(
+                value: resolution,
+                child: Text(resolution.label),
+              ))
+          .toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.dividerColor),
+          borderRadius: BorderRadius.circular(8),
         ),
-
-        // Snap resolution dropdown
-        if (notifier.value.snapResolution != SnapResolution.none)
-          DropdownButton<SnapResolution>(
-            value: notifier.value.snapResolution,
-            onChanged: (value) {
-              if (value != null) {
-                notifier.setSnapResolution(value);
-              }
-            },
-            underline: const SizedBox(),
-            items: SnapResolution.values
-                .where((res) => res != SnapResolution.none)
-                .map((resolution) => DropdownMenuItem(
-                      value: resolution,
-                      child: Text(
-                        _getSnapResolutionLabel(resolution),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ))
-                .toList(),
-          ),
-      ],
+        child: Row(
+          children: [
+            Icon(
+              Icons.grid_on,
+              size: 16,
+              color: isSnapEnabled
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isSnapEnabled ? notifier.value.snapResolution.label : 'Off',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isSnapEnabled
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -272,25 +209,90 @@ class PianoRollToolbarWidget extends StatelessWidget {
         max: Dimens.pianoRollMaxZoom,
         onChanged: (value) => notifier.setZoom(value),
         activeColor: Theme.of(context).colorScheme.primary,
-        inactiveColor: Theme.of(context).colorScheme.surfaceVariant,
+        inactiveColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
     );
   }
 
-  String _getSnapResolutionLabel(SnapResolution resolution) {
-    switch (resolution) {
-      case SnapResolution.quarter:
-        return '1/4';
-      case SnapResolution.eighth:
-        return '1/8';
-      case SnapResolution.sixteenth:
-        return '1/16';
-      case SnapResolution.thirtySecond:
-        return '1/32';
-      case SnapResolution.triplets:
-        return 'Triplets';
-      case SnapResolution.none:
-        return 'None';
-    }
+  Widget _buildBarCounter(BuildContext context, MusicStudioNotifier notifier) {
+    final theme = Theme.of(context);
+    final bars = notifier.value.bars;
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.dividerColor),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.remove, size: 16),
+            onPressed: () {
+              if (bars > 1) notifier.setBars(bars - 1);
+            },
+          ),
+          Text('$bars Bars', style: theme.textTheme.bodySmall),
+          IconButton(
+            icon: const Icon(Icons.add, size: 16),
+            onPressed: () => notifier.setBars(bars + 1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToolButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onPressed;
+
+  const _ToolButton({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: isSelected
+          ? theme.colorScheme.primary.withValues(alpha: 0.1)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(7),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(7),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -10,15 +10,21 @@ enum PianoRollTool {
 }
 
 enum SnapResolution {
-  quarter(4, '1/4'),
-  eighth(8, '1/8'),
-  sixteenth(16, '1/16'),
-  thirtySecond(32, '1/32'),
-  triplets(12, 'Triplets'),
+  bar(1, 'Bar'),
+  beat(4, '1/4'),
+  halfBeat(8, '1/8'),
+  quarterBeat(16, '1/16'),
+  eighthBeat(32, '1/32'),
+  sixteenthBeat(64, '1/64'),
+
+  // Triplets
+  tripletEighth(12, '1/8T'),
+  tripletSixteenth(24, '1/16T'),
+
   none(0, 'None');
 
-  const SnapResolution(this.divisionsPerBeat, this.label);
-  final int divisionsPerBeat;
+  const SnapResolution(this.divisionsPerBar, this.label);
+  final int divisionsPerBar;
   final String label;
 }
 
@@ -26,7 +32,7 @@ class PianoRollState extends Equatable {
   const PianoRollState({
     this.selectedNotes = const {},
     this.tool = PianoRollTool.draw,
-    this.snapResolution = SnapResolution.sixteenth,
+    this.snapResolution = SnapResolution.quarterBeat,
     this.isSnapEnabled = true,
     this.zoomLevel = 1.0,
     this.horizontalScrollOffset = 0.0,
@@ -39,8 +45,6 @@ class PianoRollState extends Equatable {
     this.isLooping = false,
     this.octaveRange = 7,
     this.lowestNote = 24, // C2
-    this.stepsPerBar = 16,
-    this.totalSteps = 32,
     this.previewOnHover = true,
     this.previewOnInsert = true,
     this.isDragging = false,
@@ -48,6 +52,7 @@ class PianoRollState extends Equatable {
     this.dragStartPosition,
     this.resizeStartNote,
     this.dragStartNoteData,
+    this.draggedNotesPreview,
   });
 
   final Set<String> selectedNotes;
@@ -65,8 +70,6 @@ class PianoRollState extends Equatable {
   final bool isLooping;
   final int octaveRange;
   final int lowestNote;
-  final int stepsPerBar;
-  final int totalSteps;
   final bool previewOnHover;
   final bool previewOnInsert;
   final bool isDragging;
@@ -74,10 +77,10 @@ class PianoRollState extends Equatable {
   final Offset? dragStartPosition;
   final Note? resizeStartNote;
   final Map<String, NoteDragData>? dragStartNoteData;
+  final Map<String, Note>? draggedNotesPreview;
 
   int get totalKeys => octaveRange * 12;
   int get highestNote => lowestNote + totalKeys - 1;
-  double get snapValue => isSnapEnabled ? 1.0 / snapResolution.divisionsPerBeat : 0.0;
 
   PianoRollState copyWith({
     Set<String>? selectedNotes,
@@ -95,8 +98,6 @@ class PianoRollState extends Equatable {
     bool? isLooping,
     int? octaveRange,
     int? lowestNote,
-    int? stepsPerBar,
-    int? totalSteps,
     bool? previewOnHover,
     bool? previewOnInsert,
     bool? isDragging,
@@ -104,6 +105,7 @@ class PianoRollState extends Equatable {
     Offset? dragStartPosition,
     Note? resizeStartNote,
     Map<String, NoteDragData>? dragStartNoteData,
+    Map<String, Note>? draggedNotesPreview,
   }) {
     return PianoRollState(
       selectedNotes: selectedNotes ?? this.selectedNotes,
@@ -121,8 +123,6 @@ class PianoRollState extends Equatable {
       isLooping: isLooping ?? this.isLooping,
       octaveRange: octaveRange ?? this.octaveRange,
       lowestNote: lowestNote ?? this.lowestNote,
-      stepsPerBar: stepsPerBar ?? this.stepsPerBar,
-      totalSteps: totalSteps ?? this.totalSteps,
       previewOnHover: previewOnHover ?? this.previewOnHover,
       previewOnInsert: previewOnInsert ?? this.previewOnInsert,
       isDragging: isDragging ?? this.isDragging,
@@ -130,6 +130,7 @@ class PianoRollState extends Equatable {
       dragStartPosition: dragStartPosition ?? this.dragStartPosition,
       resizeStartNote: resizeStartNote ?? this.resizeStartNote,
       dragStartNoteData: dragStartNoteData ?? this.dragStartNoteData,
+      draggedNotesPreview: draggedNotesPreview ?? this.draggedNotesPreview,
     );
   }
 
@@ -150,8 +151,6 @@ class PianoRollState extends Equatable {
         isLooping,
         octaveRange,
         lowestNote,
-        stepsPerBar,
-        totalSteps,
         previewOnHover,
         previewOnInsert,
         isDragging,
@@ -159,5 +158,6 @@ class PianoRollState extends Equatable {
         dragStartPosition,
         resizeStartNote,
         dragStartNoteData,
+        draggedNotesPreview,
       ];
 }

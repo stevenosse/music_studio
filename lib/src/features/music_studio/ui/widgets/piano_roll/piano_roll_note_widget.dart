@@ -7,7 +7,7 @@ class PianoRollNoteWidget extends StatefulWidget {
   final bool isSelected;
   final VoidCallback onDelete;
   final double cellWidth;
-  final Function(bool, Offset) onResizeStart;
+  final Function(bool, DragStartDetails) onResizeStart;
   final Function(Offset) onResizeUpdate;
   final VoidCallback onResizeEnd;
 
@@ -106,7 +106,7 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
         child: MouseRegion(
           cursor: SystemMouseCursors.resizeLeftRight,
           child: GestureDetector(
-            onPanStart: (details) => _startResize(true, details.globalPosition),
+            onPanStart: (details) => widget.onResizeStart(true, details),
             onPanUpdate: (details) => widget.onResizeUpdate(details.globalPosition),
             onPanEnd: (details) => _endResize(),
             child: Container(
@@ -132,7 +132,7 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
         child: MouseRegion(
           cursor: SystemMouseCursors.resizeLeftRight,
           child: GestureDetector(
-            onPanStart: (details) => _startResize(false, details.globalPosition),
+            onPanStart: (details) => widget.onResizeStart(false, details),
             onPanUpdate: (details) => widget.onResizeUpdate(details.globalPosition),
             onPanEnd: (details) => _endResize(),
             child: Container(
@@ -172,10 +172,6 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
   }
 
 
-
-  void _startResize(bool fromLeft, Offset globalPosition) {
-    widget.onResizeStart(fromLeft, globalPosition);
-  }
 
   void _endResize() {
     widget.onResizeEnd();

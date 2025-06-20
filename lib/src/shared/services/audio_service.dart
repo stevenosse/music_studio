@@ -31,7 +31,7 @@ class AudioService {
   bool _isRecording = false;
   int _currentStep = 0;
   int _bpm = 120;
-  final int _stepsPerBar = 32;
+  int _totalSteps = 32;
 
   // Getters
   bool get isPlaying => _isPlaying;
@@ -39,7 +39,6 @@ class AudioService {
   bool get isLooping => true; // Always loop
   int get currentStep => _currentStep;
   int get bpm => _bpm;
-  int get stepsPerBar => _stepsPerBar;
   TrackRepository get trackRepository => _trackRepository;
 
   // Step duration in milliseconds - for 16 steps per bar (16th note resolution)
@@ -201,8 +200,12 @@ class AudioService {
     }
   }
 
-  void play() {
+  void play({int? totalSteps}) {
     if (_isPlaying) return;
+
+    if (totalSteps != null) {
+      _totalSteps = totalSteps;
+    }
 
     _isPlaying = true;
     isPlayingNotifier.value = true;
@@ -248,10 +251,14 @@ class AudioService {
   }
 
   void seekToStep(int step) {
-    if (step >= 0 && step < _stepsPerBar) {
+    if (step >= 0 && step < _totalSteps) {
       _currentStep = step;
       currentStepNotifier.value = _currentStep;
     }
+  }
+
+  void updateLoopLength(int totalSteps) {
+    _totalSteps = totalSteps;
   }
 
   void _startSequencer() {
@@ -298,7 +305,7 @@ class AudioService {
     _currentStep++;
 
     // Always loop back to start if at end
-    if (_currentStep >= _stepsPerBar) {
+    if (_currentStep >= _totalSteps) {
       _currentStep = 0;
     }
   }

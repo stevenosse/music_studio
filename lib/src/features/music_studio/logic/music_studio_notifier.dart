@@ -6,6 +6,8 @@ import 'package:mstudio/src/features/music_studio/models/sample_pack.dart';
 
 import '../../../shared/services/audio_service.dart';
 
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:mstudio/gen/assets.gen.dart';
@@ -81,11 +83,9 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
       final Track updatedTrack = targetTrack.copyWith(notes: updatedNotes);
       currentTracks[trackIndex] = updatedTrack;
 
-      // Update the repository. The listener will handle updating `value.tracks`.
       _trackRepository.updateTracks(currentTracks);
+      _updateAudioServiceLoopLength();
 
-      // Update other parts of the state if necessary, like 'hasUnsavedChanges'.
-      // The tracks themselves will be updated via the repository listener.
       if (!value.hasUnsavedChanges) {
         value = value.copyWith(hasUnsavedChanges: true);
       }
@@ -103,8 +103,8 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
         updatedNotes[noteIndex] = updatedNote;
         tracks[trackIndex] = track.copyWith(notes: updatedNotes);
 
-        // Update repository instead of directly updating audio service
         _trackRepository.updateTracks(tracks);
+        _updateAudioServiceLoopLength();
         value = value.copyWith(hasUnsavedChanges: true);
       }
     }
@@ -133,8 +133,91 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
 
       tracks[trackIndex] = track.copyWith(notes: updatedNotes);
 
-      // Update repository instead of directly updating audio service
       _trackRepository.updateTracks(tracks);
+      _updateAudioServiceLoopLength();
+      value = value.copyWith(hasUnsavedChanges: true);
+    }
+  }
+
+  void deleteNote(String noteId) {
+    final tracks = value.tracks;
+    for (final track in tracks) {
+      final note = track.notes.firstWhereOrNull((n) => n.id == noteId);
+      if (note != null) {
+        removeNote(note);
+        return; // Assume note IDs are unique across all tracks
+      }
+    }
+  }
+
+  void updateMultipleNotes(List<Note> notesToUpdate) {
+    if (notesToUpdate.isEmpty) return;
+
+    final tracks = List<Track>.from(value.tracks);
+    bool changed = false;
+
+    // Group notes by track index for efficiency
+    final notesByTrack = groupBy(notesToUpdate, (note) => note.trackIndex);
+
+    notesByTrack.forEach((trackIndex, notes) {
+      if (trackIndex >= 0 && trackIndex < tracks.length) {
+        final track = tracks[trackIndex];
+        final updatedNotes = List<Note>.from(track.notes);
+
+        for (var updatedNote in notes) {
+          final noteIndex = updatedNotes.indexWhere((n) => n.id == updatedNote.id);
+          if (noteIndex != -1) {
+            updatedNotes[noteIndex] = updatedNote;
+            changed = true;
+          }
+        }
+        tracks[trackIndex] = track.copyWith(notes: updatedNotes);
+      }
+    });
+
+    if (changed) {
+      _trackRepository.updateTracks(tracks);
+      _updateAudioServiceLoopLength();
+      value = value.copyWith(hasUnsavedChanges: true);
+    }
+  }
+
+  void deleteMultipleNotes(List<String> noteIds) {
+    if (noteIds.isEmpty) return;
+
+    final tracks = List<Track>.from(value.tracks);
+    bool changed = false;
+
+    // Create a map of noteId to trackIndex for quick lookup
+    final Map<String, int> noteIdToTrackIndex = {};
+    for (int i = 0; i < tracks.length; i++) {
+      for (var note in tracks[i].notes) {
+        noteIdToTrackIndex[note.id] = i;
+      }
+    }
+
+    final notesToDeleteByTrack = <int, List<String>>{};
+    for (var noteId in noteIds) {
+      if (noteIdToTrackIndex.containsKey(noteId)) {
+        final trackIndex = noteIdToTrackIndex[noteId]!;
+        if (!notesToDeleteByTrack.containsKey(trackIndex)) {
+          notesToDeleteByTrack[trackIndex] = [];
+        }
+        notesToDeleteByTrack[trackIndex]!.add(noteId);
+      }
+    }
+
+    notesToDeleteByTrack.forEach((trackIndex, ids) {
+      final track = tracks[trackIndex];
+      final updatedNotes =
+          track.notes.where((n) => !ids.contains(n.id)).toList();
+      tracks[trackIndex] = track.copyWith(notes: updatedNotes);
+      changed = true;
+    });
+
+    if (changed) {
+      _trackRepository.updateTracks(tracks);
+      _updateAudioServiceLoopLength();
       value = value.copyWith(hasUnsavedChanges: true);
     }
   }
@@ -245,11 +328,12 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
 
   // Transport controls
   void play() {
-    _audioService.play();
+    final totalSteps = _calculateTotalSteps();
+    _audioService.play(totalSteps: totalSteps);
   }
 
-  Future<void> stop() async {
-    await _audioService.stop();
+  void stop() {
+    _audioService.stop();
   }
 
   Future<void> pause() async {
@@ -262,6 +346,45 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
 
   void setBpm(int bpm) {
     _audioService.setBpm(bpm);
+  }
+
+  void setBars(int bars) {
+    if (bars > 0) {
+      value = value.copyWith(bars: bars, hasUnsavedChanges: true);
+    }
+  }
+
+  void seekToStep(int step) {
+    _audioService.seekToStep(step);
+  }
+
+  int _calculateTotalSteps() {
+    int lastStep = 0;
+    for (final track in value.tracks) {
+      if (track.notes.isNotEmpty) {
+        final maxEndStep =
+            track.notes.map((n) => n.step + n.duration).reduce(max);
+        if (maxEndStep > lastStep) {
+          lastStep = maxEndStep;
+        }
+      }
+    }
+
+    int barsNeeded = 1;
+    if (lastStep > 0) {
+      barsNeeded = (lastStep / value.stepsPerBar).ceil();
+    }
+
+    if (barsNeeded == 0) {
+      barsNeeded = 1;
+    }
+
+    return barsNeeded * value.stepsPerBar;
+  }
+
+  void _updateAudioServiceLoopLength() {
+    final totalSteps = _calculateTotalSteps();
+    _audioService.updateLoopLength(totalSteps);
   }
 
   // Track management

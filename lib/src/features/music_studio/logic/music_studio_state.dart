@@ -6,16 +6,17 @@ import '../models/track.dart';
 class MusicStudioState extends Equatable {
   const MusicStudioState({
     this.tracks = const [],
-    this.selectedTrackIndex = 0,
+    this.soundfonts = const [],
+    this.samplePacks = const [],
     this.isPlaying = false,
     this.isRecording = false,
     this.currentStep = 0,
     this.bpm = 120,
-    this.stepsPerBar = 32,
+    this.bars = 2,
+    this.stepsPerBar = 48,
+    this.selectedTrackIndex = 0,
     this.projectName = 'Untitled Project',
     this.hasUnsavedChanges = false,
-    this.samplePacks = const [],
-    this.soundfonts = const [],
   });
 
   final List<Track> tracks;
@@ -25,6 +26,7 @@ class MusicStudioState extends Equatable {
   final int currentStep;
   final int bpm;
   final int stepsPerBar;
+  final int bars;
   final String projectName;
   final bool hasUnsavedChanges;
   final List<SamplePack> samplePacks;
@@ -39,6 +41,7 @@ class MusicStudioState extends Equatable {
     int? currentStep,
     int? bpm,
     int? stepsPerBar,
+    int? bars,
     bool? hasUnsavedChanges,
     List<SamplePack>? samplePacks,
     List<String>? soundfonts,
@@ -52,6 +55,7 @@ class MusicStudioState extends Equatable {
       currentStep: currentStep ?? this.currentStep,
       bpm: bpm ?? this.bpm,
       stepsPerBar: stepsPerBar ?? this.stepsPerBar,
+      bars: bars ?? this.bars,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
       samplePacks: samplePacks ?? this.samplePacks,
       soundfonts: soundfonts ?? this.soundfonts,
@@ -67,6 +71,7 @@ class MusicStudioState extends Equatable {
         currentStep,
         bpm,
         stepsPerBar,
+        bars,
         projectName,
         hasUnsavedChanges,
         samplePacks,
@@ -75,6 +80,6 @@ class MusicStudioState extends Equatable {
 
   @override
   String toString() {
-    return 'MusicStudioState(projectName: $projectName, tracks: $tracks, selectedTrackIndex: $selectedTrackIndex, isPlaying: $isPlaying, isRecording: $isRecording, currentStep: $currentStep, bpm: $bpm, stepsPerBar: $stepsPerBar, hasUnsavedChanges: $hasUnsavedChanges, samplePacks: $samplePacks, soundfonts: $soundfonts)';
+    return 'MusicStudioState(projectName: $projectName, tracks: $tracks, selectedTrackIndex: $selectedTrackIndex, isPlaying: $isPlaying, isRecording: $isRecording, currentStep: $currentStep, bpm: $bpm, stepsPerBar: $stepsPerBar, bars: $bars, hasUnsavedChanges: $hasUnsavedChanges, samplePacks: $samplePacks, soundfonts: $soundfonts)';
   }
 }
