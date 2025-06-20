@@ -122,6 +122,11 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
         isSelected: notifier.isNoteSelected(note.id),
         onResizeStart: (fromLeft, globalPosition) =>
             _onNoteResizeGestureStart(note, globalPosition, fromLeft, notifier),
+        onResizeUpdate: (globalPosition) {
+          final RenderBox renderBox = context.findRenderObject() as RenderBox;
+          final localPosition = renderBox.globalToLocal(globalPosition);
+          _updateNoteResize(localPosition, notifier);
+        },
         onResizeEnd: () => _onNoteResizeGestureEnd(notifier),
         onDelete: () => widget.onNoteDeleted(note.id),
         cellWidth: notifier.cellWidth,
@@ -156,7 +161,7 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
 
     if (notifier.value.mode == PianoRollMode.draw) {
       if (clickedNote != null) {
-        widget.onNoteDeleted(clickedNote.id);
+        widget.onNotesSelected({clickedNote.id}, addToSelection: false);
       } else {
         _createNoteAtPosition(gridPos, notifier);
       }
@@ -301,26 +306,41 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
 
     final deltaX = currentPanPosition.dx - _resizeGestureStartPanPosition!.dx;
     final stepDelta = deltaX / notifier.cellWidth;
-    final snappedStepDelta = notifier.snapToGrid(stepDelta);
 
     int newStep = _originalStepAtResizeStart!;
     int newDuration = _originalDurationAtResizeStart!;
 
     if (_isResizingFromLeft) {
-      final potentialNewStep = _originalStepAtResizeStart! + snappedStepDelta;
-      final potentialNewDuration = _originalDurationAtResizeStart! - snappedStepDelta;
-      if (potentialNewDuration >= 1) {
-        newStep = potentialNewStep.round();
-        newDuration = potentialNewDuration.round();
+      // Calculate the new potential start step and snap it to the grid
+      final potentialNewStepDouble = _originalStepAtResizeStart! + stepDelta;
+      final snappedNewStep = notifier.snapToGrid(potentialNewStepDouble).round();
+
+      // Calculate the change in steps and the resulting new duration
+      final snappedStepChange = snappedNewStep - _originalStepAtResizeStart!;
+      final potentialNewDuration = _originalDurationAtResizeStart! - snappedStepChange;
+
+      // Apply changes if valid (duration >= 1 and left handle doesn't cross right handle)
+      if (potentialNewDuration >= 1 && snappedNewStep < (_originalStepAtResizeStart! + _originalDurationAtResizeStart!)) {
+        newStep = snappedNewStep;
+        newDuration = potentialNewDuration;
       }
-    } else {
-      final potentialNewDuration = _originalDurationAtResizeStart! + snappedStepDelta;
+    } else { // Resizing from the right
+      // Calculate the new potential end step and snap it to the grid
+      final originalEndStep = _originalStepAtResizeStart! + _originalDurationAtResizeStart!;
+      final potentialNewEndStepDouble = originalEndStep + stepDelta;
+      final snappedNewEndStep = notifier.snapToGrid(potentialNewEndStepDouble).round();
+
+      // Calculate the new duration from the snapped end position
+      final potentialNewDuration = snappedNewEndStep - _originalStepAtResizeStart!;
+
+      // Apply change if valid (duration >= 1)
       if (potentialNewDuration >= 1) {
-        newDuration = potentialNewDuration.round();
+        newDuration = potentialNewDuration;
       }
     }
 
     final state = notifier.value;
+    // Clamp step and duration to the piano roll boundaries
     newStep = newStep.clamp(0, state.totalSteps - 1);
     newDuration = newDuration.clamp(1, state.totalSteps - newStep);
 

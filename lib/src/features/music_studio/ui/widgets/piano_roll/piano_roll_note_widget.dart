@@ -8,6 +8,7 @@ class PianoRollNoteWidget extends StatefulWidget {
   final VoidCallback onDelete;
   final double cellWidth;
   final Function(bool, Offset) onResizeStart;
+  final Function(Offset) onResizeUpdate;
   final VoidCallback onResizeEnd;
 
   const PianoRollNoteWidget({
@@ -17,6 +18,7 @@ class PianoRollNoteWidget extends StatefulWidget {
     required this.onDelete,
     required this.cellWidth,
     required this.onResizeStart,
+    required this.onResizeUpdate,
     required this.onResizeEnd,
   });
 
@@ -104,8 +106,8 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
         child: MouseRegion(
           cursor: SystemMouseCursors.resizeLeftRight,
           child: GestureDetector(
-            onPanStart: (details) => _startResize(true, details.globalPosition), // Pass globalPosition
-            // onPanUpdate: (details) => _updateLeftResize(details), // Removed to centralize logic in grid
+            onPanStart: (details) => _startResize(true, details.globalPosition),
+            onPanUpdate: (details) => widget.onResizeUpdate(details.globalPosition),
             onPanEnd: (details) => _endResize(),
             child: Container(
               color: Colors.transparent,
@@ -130,8 +132,8 @@ class _PianoRollNoteWidgetState extends State<PianoRollNoteWidget> {
         child: MouseRegion(
           cursor: SystemMouseCursors.resizeLeftRight,
           child: GestureDetector(
-            onPanStart: (details) => _startResize(false, details.globalPosition), // Pass globalPosition
-            // onPanUpdate: (details) => _updateRightResize(details), // Removed to centralize logic in grid
+            onPanStart: (details) => _startResize(false, details.globalPosition),
+            onPanUpdate: (details) => widget.onResizeUpdate(details.globalPosition),
             onPanEnd: (details) => _endResize(),
             child: Container(
               color: Colors.transparent,
