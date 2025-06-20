@@ -187,73 +187,96 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
 
                 // Main piano roll area
                 Expanded(
-                  child: Column(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header with step indicators
-                      _buildHeader(),
-
-                      // Piano roll grid area
-                      Expanded(
-                        child: Row(
+                      // Left side: Piano Keyboard
+                      SizedBox(
+                        width: Dimens.pianoRollKeyboardWidth,
+                        child: Column(
                           children: [
-                            // Piano keyboard
-                            SizedBox(
-                              width: Dimens.pianoRollKeyboardWidth,
+                            SizedBox(height: Dimens.pianoRollHeaderHeight), // Spacer for header
+                            Expanded(
                               child: PianoRollKeyboardWidget(
-                                verticalScrollController:
-                                    _pianoScrollController,
+                                verticalScrollController: _pianoScrollController,
                                 onKeyPressed: (pitch) =>
                                     _previewNote(musicStudioNotifier, pitch),
                                 totalKeys: pianoRollState.totalKeys,
                                 lowestNote: pianoRollState.lowestNote,
                               ),
                             ),
-
-                            // Note grid
-                            Expanded(
-                              child: PianoRollGridWidget(
-                                trackIndex: widget.trackIndex,
-                                notes: notes,
-                                horizontalScrollController:
-                                    _horizontalScrollController,
-                                verticalScrollController:
-                                    _verticalScrollController,
-                                onNoteCreated: (note) =>
-                                    _createNote(musicStudioNotifier, note),
-                                onNoteUpdated: (note) =>
-                                    _updateNote(musicStudioNotifier, note),
-                                onNoteDeleted: (noteId) =>
-                                    _deleteNote(musicStudioNotifier, noteId),
-                                onNotesSelected: (noteIds,
-                                        {addToSelection = false}) =>
-                                    pianoRollNotifier.selectMultipleNotes(
-                                        noteIds,
-                                        addToSelection: addToSelection),
-                                onMultipleNotesUpdated: (updatedNotes) {
-                                  for (final note in updatedNotes) {
-                                    _updateNote(musicStudioNotifier, note);
-                                  }
-                                },
-                              ),
-                            ),
+                            if (pianoRollState.showVelocityEditor)
+                              SizedBox(height: Dimens.pianoRollVelocityBarHeight),
                           ],
                         ),
                       ),
-                      // Velocity editor (if enabled)
-                      if (pianoRollState.showVelocityEditor)
-                        SizedBox(
-                          height: Dimens.pianoRollVelocityBarHeight,
-                          child: PianoRollVelocityEditorWidget(
-                            notes: notes,
-                            horizontalScrollController:
-                                _horizontalScrollController,
-                            cellWidth: 40.0 * pianoRollState.zoomLevel,
-                            totalSteps: pianoRollState.totalSteps,
-                            onVelocityChanged: (note, velocity) =>
-                                _updateNoteVelocity(
-                                    musicStudioNotifier, note.id, velocity),
+                      // Right side: Scrollable content
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: _horizontalScrollController,
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(),
+                          child: SizedBox(
+                            width: pianoRollNotifier.totalWidth,
+                            child: Column(
+                              children: [
+                                // Header
+                                SizedBox(
+                                  height: Dimens.pianoRollHeaderHeight,
+                                  child: PianoRollHeaderWidget(
+                                    cellWidth: 40.0 * pianoRollState.zoomLevel,
+                                    totalSteps: pianoRollState.totalSteps,
+                                    stepsPerBar: pianoRollState.stepsPerBar,
+                                    onSeek: (position) =>
+                                        _seek(musicStudioNotifier, position),
+                                  ),
+                                ),
+                                // Grid
+                                Expanded(
+                                  child: PianoRollGridWidget(
+                                    trackIndex: widget.trackIndex,
+                                    notes: notes,
+                                    verticalScrollController:
+                                        _verticalScrollController,
+                                    onNoteCreated: (note) =>
+                                        _createNote(musicStudioNotifier, note),
+                                    onNoteUpdated: (note) =>
+                                        _updateNote(musicStudioNotifier, note),
+                                    onNoteDeleted: (noteId) => _deleteNote(
+                                        musicStudioNotifier, noteId),
+                                    onNotesSelected: (noteIds,
+                                            {addToSelection = false}) =>
+                                        pianoRollNotifier.selectMultipleNotes(
+                                            noteIds,
+                                            addToSelection: addToSelection),
+                                    onMultipleNotesUpdated: (updatedNotes) {
+                                      for (final note in updatedNotes) {
+                                        _updateNote(musicStudioNotifier, note);
+                                      }
+                                    },
+                                  ),
+                                ),
+                                // Velocity editor
+                                if (pianoRollState.showVelocityEditor)
+                                  SizedBox(
+                                    height: Dimens.pianoRollVelocityBarHeight,
+                                    child: PianoRollVelocityEditorWidget(
+                                      notes: notes,
+                                      cellWidth:
+                                          40.0 * pianoRollState.zoomLevel,
+                                      totalSteps: pianoRollState.totalSteps,
+                                      onVelocityChanged: (note, velocity) =>
+                                          _updateNoteVelocity(
+                                              musicStudioNotifier,
+                                              note.id,
+                                              velocity),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -340,33 +363,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Consumer2<MusicStudioNotifier, PianoRollNotifier>(
-      builder: (context, musicStudioNotifier, pianoRollNotifier, child) {
-        final pianoRollState = pianoRollNotifier.value;
-        return Row(
-          children: [
-            // Piano keyboard spacer
-            SizedBox(width: Dimens.pianoRollKeyboardWidth),
 
-            // Step header
-            Expanded(
-              child: SizedBox(
-                height: Dimens.pianoRollHeaderHeight,
-                child: PianoRollHeaderWidget(
-                  horizontalScrollController: _horizontalScrollController,
-                  cellWidth: 40.0 * pianoRollState.zoomLevel,
-                  totalSteps: pianoRollState.totalSteps,
-                  stepsPerBar: pianoRollState.stepsPerBar,
-                  onSeek: (position) => _seek(musicStudioNotifier, position),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   KeyEventResult _handleKeyEvent(
     KeyEvent event,

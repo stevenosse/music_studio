@@ -27,8 +27,9 @@ class PianoRollNotifier extends ValueNotifier<PianoRollState> {
 
   // Convert screen position to grid coordinates
   GridPosition screenToGrid(Offset screenPosition) {
-    // Add scroll offsets to convert screen position to absolute position within the scrollable content
-    final absoluteX = screenPosition.dx + value.horizontalScrollOffset;
+    // The dx is an absolute coordinate from the gesture on the horizontally-scrolling canvas.
+    // The dy is relative to the vertical viewport, so we add the vertical scroll offset.
+    final absoluteX = screenPosition.dx;
     final absoluteY = screenPosition.dy + value.verticalScrollOffset;
 
     final step = absoluteX / cellWidth;
@@ -138,10 +139,16 @@ class PianoRollNotifier extends ValueNotifier<PianoRollState> {
     Offset endPosition,
     List<Note> allNotes,
   ) {
-    final left = math.min(startPosition.dx, endPosition.dx);
-    final right = math.max(startPosition.dx, endPosition.dx);
-    final top = math.min(startPosition.dy, endPosition.dy);
-    final bottom = math.max(startPosition.dy, endPosition.dy);
+    // The gesture position's dx is absolute, dy is relative. We adjust dy to get
+    // absolute coordinates for comparison with the absolute note positions.
+    final adjustedStart =
+        startPosition.translate(0, value.verticalScrollOffset);
+    final adjustedEnd = endPosition.translate(0, value.verticalScrollOffset);
+
+    final left = math.min(adjustedStart.dx, adjustedEnd.dx);
+    final right = math.max(adjustedStart.dx, adjustedEnd.dx);
+    final top = math.min(adjustedStart.dy, adjustedEnd.dy);
+    final bottom = math.max(adjustedStart.dy, adjustedEnd.dy);
 
     final selectedNoteIds = <String>{};
     

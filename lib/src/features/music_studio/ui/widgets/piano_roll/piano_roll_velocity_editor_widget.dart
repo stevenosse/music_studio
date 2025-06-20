@@ -5,7 +5,6 @@ import '../../../../../core/theme/dimens.dart';
 import '../../../models/note.dart';
 
 class PianoRollVelocityEditorWidget extends StatefulWidget {
-  final ScrollController horizontalScrollController;
   final List<Note> notes;
   final double cellWidth;
   final int totalSteps;
@@ -13,7 +12,6 @@ class PianoRollVelocityEditorWidget extends StatefulWidget {
 
   const PianoRollVelocityEditorWidget({
     super.key,
-    required this.horizontalScrollController,
     required this.notes,
     required this.cellWidth,
     required this.totalSteps,
@@ -32,55 +30,7 @@ class _PianoRollVelocityEditorWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      height: Dimens.pianoRollVelocityBarHeight,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: theme.dividerColor,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Left label area
-          Container(
-            width: Dimens.pianoRollKeyboardWidth,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              border: Border(
-                right: BorderSide(
-                  color: theme.dividerColor,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Center(
-              child: Text(
-                'Velocity',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  fontSize: 10,
-                ),
-              ),
-            ),
-          ),
-
-          // Velocity bars area
-          Expanded(
-            child: SingleChildScrollView(
-              controller: widget.horizontalScrollController,
-              scrollDirection: Axis.horizontal,
-              child: _buildVelocityBars(context),
-            ),
-          ),
-        ],
-      ),
-    );
+    return _buildVelocityBars(context);
   }
 
   Widget _buildVelocityBars(BuildContext context) {

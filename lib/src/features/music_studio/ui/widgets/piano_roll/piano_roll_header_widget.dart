@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../../../../core/theme/dimens.dart';
 
 class PianoRollHeaderWidget extends StatelessWidget {
-  final ScrollController horizontalScrollController;
   final double cellWidth;
   final int totalSteps;
   final int stepsPerBar;
@@ -13,7 +12,6 @@ class PianoRollHeaderWidget extends StatelessWidget {
 
   const PianoRollHeaderWidget({
     super.key,
-    required this.horizontalScrollController,
     required this.cellWidth,
     required this.totalSteps,
     required this.stepsPerBar,
@@ -22,55 +20,7 @@ class PianoRollHeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return Container(
-      height: Dimens.pianoRollHeaderHeight,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: theme.dividerColor,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Left spacer (matches keyboard width)
-          Container(
-            width: Dimens.pianoRollKeyboardWidth,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              border: Border(
-                right: BorderSide(
-                  color: theme.dividerColor,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Center(
-              child: Text(
-                'Time',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  fontSize: 10,
-                ),
-              ),
-            ),
-          ),
-          
-          // Time ruler
-          Expanded(
-            child: SingleChildScrollView(
-              controller: horizontalScrollController,
-              scrollDirection: Axis.horizontal,
-              child: _buildTimeRuler(context),
-            ),
-          ),
-        ],
-      ),
-    );
+    return _buildTimeRuler(context);
   }
 
   Widget _buildTimeRuler(BuildContext context) {

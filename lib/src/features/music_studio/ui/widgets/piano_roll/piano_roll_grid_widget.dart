@@ -13,7 +13,6 @@ import 'piano_roll_note_widget.dart';
 class PianoRollGridWidget extends StatefulWidget {
   final int trackIndex;
   final List<Note> notes;
-  final ScrollController horizontalScrollController;
   final ScrollController verticalScrollController;
   final Function(Note) onNoteCreated;
   final Function(Note) onNoteUpdated;
@@ -25,7 +24,6 @@ class PianoRollGridWidget extends StatefulWidget {
     super.key,
     required this.trackIndex,
     required this.notes,
-    required this.horizontalScrollController,
     required this.verticalScrollController,
     required this.onNoteCreated,
     required this.onNoteUpdated,
@@ -96,37 +94,33 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
           onPanUpdate: (details) => _handlePanUpdate(details, notifier),
           onPanEnd: (details) => _handlePanEnd(details, notifier),
           child: SingleChildScrollView(
-            controller: widget.horizontalScrollController,
-            scrollDirection: Axis.horizontal,
+            controller: widget.verticalScrollController,
             physics: const AlwaysScrollableScrollPhysics(),
-            child: SingleChildScrollView(
-              controller: widget.verticalScrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: SizedBox(
-                width: notifier.totalWidth,
-                height: notifier.totalHeight,
-                child: Stack(
-                  children: [
-                    CustomPaint(
-                      painter: PianoRollGridPainter(
-                        cellWidth: notifier.cellWidth,
-                        keyHeight: notifier.keyHeight,
-                        totalSteps: state.totalSteps,
-                        totalKeys: state.totalKeys,
-                        stepsPerBar: state.stepsPerBar,
-                        lowestNote: state.lowestNote,
-                        playheadPosition: state.playheadPosition,
-                        loopStart: state.loopStart,
-                        loopEnd: state.loopEnd,
-                        isLooping: state.isLooping,
-                      ),
-                      size: Size(notifier.totalWidth, notifier.totalHeight),
+            child: SizedBox(
+              width: notifier.totalWidth,
+              height: notifier.totalHeight,
+              child: Stack(
+                children: [
+                  CustomPaint(
+                    painter: PianoRollGridPainter(
+                      cellWidth: notifier.cellWidth,
+                      keyHeight: notifier.keyHeight,
+                      totalSteps: state.totalSteps,
+                      totalKeys: state.totalKeys,
+                      stepsPerBar: state.stepsPerBar,
+                      lowestNote: state.lowestNote,
+                      playheadPosition: state.playheadPosition,
+                      loopStart: state.loopStart,
+                      loopEnd: state.loopEnd,
+                      isLooping: state.isLooping,
                     ),
-                    ...widget.notes
-                        .map((note) => _buildNoteWidget(note, notifier)),
-                    if (_isSelectionBoxActive) _buildSelectionBox(),
-                  ],
-                ),
+                    size: Size(notifier.totalWidth, notifier.totalHeight),
+                  ),
+                  ...widget.notes
+                      .map((note) => _buildNoteWidget(note, notifier)),
+                  if (_isSelectionBoxActive)
+                    _buildSelectionBox(notifier),
+                ],
               ),
             ),
           ),
@@ -167,11 +161,19 @@ class _PianoRollGridWidgetState extends State<PianoRollGridWidget> {
     );
   }
 
-  Widget _buildSelectionBox() {
+  Widget _buildSelectionBox(PianoRollNotifier notifier) {
     if (_selectionBoxStart == null || _selectionBoxEnd == null) {
       return const SizedBox.shrink();
     }
-    final rect = Rect.fromPoints(_selectionBoxStart!, _selectionBoxEnd!);
+
+    // The gesture dx is absolute, dy is relative. To position the box inside the
+    // scrollable Stack, we convert dy to an absolute coordinate by adding the vertical scroll.
+    final verticalScroll = notifier.value.verticalScrollOffset;
+    final adjustedStart = _selectionBoxStart!.translate(0, verticalScroll);
+    final adjustedEnd = _selectionBoxEnd!.translate(0, verticalScroll);
+
+    final rect = Rect.fromPoints(adjustedStart, adjustedEnd);
+
     return Positioned.fromRect(
       rect: rect,
       child: Container(
