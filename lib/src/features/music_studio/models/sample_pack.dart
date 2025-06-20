@@ -54,12 +54,14 @@ class SamplePack extends Equatable {
 class Sample extends Equatable {
   final String name;
   final String path;
+  final int? baseMidiNote;
   final String? description;
   final List<String>? tags;
   
   const Sample({
     required this.name,
     required this.path,
+    this.baseMidiNote,
     this.description,
     this.tags,
   });
@@ -67,12 +69,14 @@ class Sample extends Equatable {
   Sample copyWith({
     String? name,
     String? path,
+    int? baseMidiNote,
     String? description,
     List<String>? tags,
   }) {
     return Sample(
       name: name ?? this.name,
       path: path ?? this.path,
+      baseMidiNote: baseMidiNote ?? this.baseMidiNote,
       description: description ?? this.description,
       tags: tags ?? this.tags,
     );
@@ -82,6 +86,7 @@ class Sample extends Equatable {
     return {
       'name': name,
       'path': path,
+      'baseMidiNote': baseMidiNote,
       'description': description,
       'tags': tags,
     };
@@ -91,11 +96,12 @@ class Sample extends Equatable {
     return Sample(
       name: json['name'] as String,
       path: json['path'] as String,
+      baseMidiNote: json['baseMidiNote'] as int?,
       description: json['description'] as String?,
       tags: (json['tags'] as List?)?.cast<String>(),
     );
   }
 
   @override
-  List<Object?> get props => [name, path, description, tags];
+  List<Object?> get props => [name, path, baseMidiNote, description, tags];
 }

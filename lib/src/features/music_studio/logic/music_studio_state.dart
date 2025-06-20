@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:mstudio/src/features/music_studio/models/sample_pack.dart';
 
 import '../models/track.dart';
 
@@ -13,6 +14,8 @@ class MusicStudioState extends Equatable {
     this.stepsPerBar = 32,
     this.projectName = 'Untitled Project',
     this.hasUnsavedChanges = false,
+    this.samplePacks = const [],
+    this.soundfonts = const [],
   });
 
   final List<Track> tracks;
@@ -24,6 +27,8 @@ class MusicStudioState extends Equatable {
   final int stepsPerBar;
   final String projectName;
   final bool hasUnsavedChanges;
+  final List<SamplePack> samplePacks;
+  final List<String> soundfonts;
 
   MusicStudioState copyWith({
     String? projectName,
@@ -35,6 +40,8 @@ class MusicStudioState extends Equatable {
     int? bpm,
     int? stepsPerBar,
     bool? hasUnsavedChanges,
+    List<SamplePack>? samplePacks,
+    List<String>? soundfonts,
   }) {
     return MusicStudioState(
       projectName: projectName ?? this.projectName,
@@ -46,6 +53,8 @@ class MusicStudioState extends Equatable {
       bpm: bpm ?? this.bpm,
       stepsPerBar: stepsPerBar ?? this.stepsPerBar,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
+      samplePacks: samplePacks ?? this.samplePacks,
+      soundfonts: soundfonts ?? this.soundfonts,
     );
   }
 
@@ -60,10 +69,12 @@ class MusicStudioState extends Equatable {
         stepsPerBar,
         projectName,
         hasUnsavedChanges,
+        samplePacks,
+        soundfonts,
       ];
 
   @override
   String toString() {
-    return 'MusicStudioState(projectName: $projectName, tracks: $tracks, selectedTrackIndex: $selectedTrackIndex, isPlaying: $isPlaying, isRecording: $isRecording, currentStep: $currentStep, bpm: $bpm, stepsPerBar: $stepsPerBar, hasUnsavedChanges: $hasUnsavedChanges)';
+    return 'MusicStudioState(projectName: $projectName, tracks: $tracks, selectedTrackIndex: $selectedTrackIndex, isPlaying: $isPlaying, isRecording: $isRecording, currentStep: $currentStep, bpm: $bpm, stepsPerBar: $stepsPerBar, hasUnsavedChanges: $hasUnsavedChanges, samplePacks: $samplePacks, soundfonts: $soundfonts)';
   }
 }

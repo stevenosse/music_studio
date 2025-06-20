@@ -6,6 +6,7 @@ import 'note.dart';
 enum AudioSourceType {
   asset,
   deviceFile,
+  soundfont,
 }
 
 class Track extends Equatable {
@@ -19,6 +20,7 @@ class Track extends Equatable {
   final double volume;
   final String? samplePath;
   final AudioSourceType audioSourceType;
+  final int? baseMidiNoteForSample;
   
   const Track({
     required this.id,
@@ -31,6 +33,7 @@ class Track extends Equatable {
     this.volume = 1.0,
     this.samplePath,
     this.audioSourceType = AudioSourceType.asset,
+    this.baseMidiNoteForSample,
   });
   
   Track copyWith({
@@ -44,6 +47,7 @@ class Track extends Equatable {
     double? volume,
     String? samplePath,
     AudioSourceType? audioSourceType,
+    int? baseMidiNoteForSample,
   }) {
     return Track(
       id: id ?? this.id,
@@ -56,6 +60,7 @@ class Track extends Equatable {
       volume: volume ?? this.volume,
       samplePath: samplePath ?? this.samplePath,
       audioSourceType: audioSourceType ?? this.audioSourceType,
+      baseMidiNoteForSample: baseMidiNoteForSample ?? this.baseMidiNoteForSample,
     );
   }
   
@@ -70,6 +75,7 @@ class Track extends Equatable {
       'volume': volume,
       'samplePath': samplePath,
       'audioSourceType': audioSourceType.name,
+      'baseMidiNoteForSample': baseMidiNoteForSample,
     };
   }
 
@@ -89,6 +95,7 @@ class Track extends Equatable {
         (e) => e.name == json['audioSourceType'],
         orElse: () => AudioSourceType.asset,
       ),
+      baseMidiNoteForSample: json['baseMidiNoteForSample'] as int?,
     );
   }
 
@@ -104,5 +111,6 @@ class Track extends Equatable {
     volume,
     samplePath,
     audioSourceType,
+    baseMidiNoteForSample,
   ];
 }

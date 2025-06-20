@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mstudio/src/features/music_studio/logic/piano_roll/piano_roll_notifier.dart';
 import 'package:mstudio/src/features/music_studio/logic/piano_roll/piano_roll_state.dart';
 import 'package:provider/provider.dart';
+import 'package:mstudio/src/core/theme/dimens.dart';
 
 class PianoRollToolbarWidget extends StatelessWidget {
   final VoidCallback onQuantize;
@@ -56,6 +57,11 @@ class PianoRollToolbarWidget extends StatelessWidget {
 
                 // Zoom controls
                 _buildZoomControls(context, notifier),
+
+                const SizedBox(width: 8),
+
+                // Zoom slider
+                _buildZoomSlider(context, notifier),
 
                 const SizedBox(width: 16),
 
@@ -253,6 +259,20 @@ class PianoRollToolbarWidget extends StatelessWidget {
           fontSize: 11,
           color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
         ),
+      ),
+    );
+  }
+
+  Widget _buildZoomSlider(BuildContext context, PianoRollNotifier notifier) {
+    return SizedBox(
+      width: 120,
+      child: Slider(
+        value: notifier.value.zoomLevel,
+        min: Dimens.pianoRollMinZoom,
+        max: Dimens.pianoRollMaxZoom,
+        onChanged: (value) => notifier.setZoom(value),
+        activeColor: Theme.of(context).colorScheme.primary,
+        inactiveColor: Theme.of(context).colorScheme.surfaceVariant,
       ),
     );
   }

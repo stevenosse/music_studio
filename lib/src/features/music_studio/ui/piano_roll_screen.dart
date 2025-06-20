@@ -521,11 +521,7 @@ class _PianoRollScreenState extends State<PianoRollScreen> {
 
   void _previewNote(MusicStudioNotifier musicStudioNotifier, int pitch) {
     final track = musicStudioNotifier.value.tracks[widget.trackIndex];
-
-    if (track.samplePath != null) {
-      musicStudioNotifier.audioService.playTrackSample(track.id);
-    } else {
-      musicStudioNotifier.audioService.playNote(pitch, 100);
-    }
+    musicStudioNotifier.audioService
+        .playTrackSample(track.id, pitch: pitch, volume: 1.0);
   }
 }

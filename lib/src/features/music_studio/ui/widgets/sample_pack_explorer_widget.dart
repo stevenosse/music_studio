@@ -76,112 +76,130 @@ class _SamplePackExplorerWidgetState extends State<SamplePackExplorerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(Dimens.paddingMedium),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16.0, left: 8.0, right: 8.0),
+          child: Row(
             children: [
               Icon(
                 IconsaxPlusLinear.folder_2,
-                color: Theme.of(context).colorScheme.primary,
+                color: theme.colorScheme.primary,
+                size: 20,
               ),
-              SizedBox(width: Dimens.spacingSmall),
+              const SizedBox(width: 8),
               Text(
                 'Sample Packs',
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: theme.textTheme.titleMedium,
               ),
               const Spacer(),
-              IconButton(
-                onPressed: _addSamplePack,
-                icon: const Icon(IconsaxPlusLinear.add),
-                tooltip: 'Add Sample Pack',
+              SizedBox(
+                height: 32,
+                width: 32,
+                child: IconButton.filled(
+                  onPressed: _addSamplePack,
+                  icon: const Icon(IconsaxPlusLinear.add),
+                  iconSize: 16,
+                  tooltip: 'Add Sample Pack',
+                  style: IconButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Dimens.radiusSmall),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          
-          SizedBox(height: Dimens.spacingMedium),
-          
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else
-            // Sample packs list
-            Expanded(
-              child: ListView.builder(
-                itemCount: _samplePacks.length,
-                itemBuilder: (context, index) {
-                  return _buildSamplePackCard(_samplePacks[index]);
-                },
-              ),
+        ),
+
+        // Sample packs list
+        if (_isLoading)
+          const Center(child: CircularProgressIndicator())
+        else
+          Expanded(
+            child: ListView.builder(
+              itemCount: _samplePacks.length,
+              itemBuilder: (context, index) {
+                return _buildSamplePackCard(_samplePacks[index]);
+              },
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
   
   Widget _buildSamplePackCard(SamplePack pack) {
-    return Card(
-      margin: EdgeInsets.only(bottom: Dimens.spacingMedium),
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8.0),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withValues(alpha: 102),
+        borderRadius: BorderRadius.circular(Dimens.radiusMedium),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 51),
+          width: 1,
+        ),
+      ),
       child: ExpansionTile(
         leading: Icon(
           IconsaxPlusLinear.music_library_2,
-          color: Theme.of(context).colorScheme.primary,
+          color: theme.colorScheme.primary,
         ),
         title: Text(
           pack.name,
-          style: Theme.of(context).textTheme.titleMedium,
+          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
           '${pack.samples.length} samples',
-          style: Theme.of(context).textTheme.bodySmall,
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 179)),
         ),
-        children: [
-          Padding(
-            padding: EdgeInsets.all(Dimens.paddingMedium),
-            child: Column(
-              children: pack.samples.map((sample) {
-                return _buildSampleItem(sample, pack);
-              }).toList(),
-            ),
-          ),
-        ],
+        childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        children: pack.samples.map((sample) {
+          return _buildSampleItem(sample, pack);
+        }).toList(),
       ),
     );
   }
   
   Widget _buildSampleItem(Sample sample, SamplePack pack) {
+    final theme = Theme.of(context);
     return Consumer<MusicStudioNotifier>(builder: (context, notifier, child) {
-      return Container(
-        margin: EdgeInsets.only(bottom: Dimens.spacingSmall),
-        child: Row(
-          children: [
-            Icon(
-              IconsaxPlusLinear.music,
-              size: 16,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-            SizedBox(width: Dimens.spacingSmall),
-            Expanded(
-              child: Text(
-                sample.name,
-                style: Theme.of(context).textTheme.bodyMedium,
+      return InkWell(
+        onTap: () => _addSampleToTrack(notifier, sample),
+        borderRadius: BorderRadius.circular(Dimens.radiusSmall),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+          child: Row(
+            children: [
+              Icon(
+                IconsaxPlusLinear.music,
+                size: 16,
+                color: theme.colorScheme.onSurface.withValues(alpha: 179),
               ),
-            ),
-            IconButton(
-              onPressed: () => _previewSample(sample),
-              icon: const Icon(IconsaxPlusLinear.play),
-              iconSize: 16,
-              tooltip: 'Preview',
-            ),
-            IconButton(
-              onPressed: () => _addSampleToTrack(notifier, sample),
-              icon: const Icon(IconsaxPlusLinear.add_circle),
-              iconSize: 16,
-              tooltip: 'Add to Track',
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  sample.name,
+                  style: theme.textTheme.bodyMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(
+                height: 28,
+                width: 28,
+                child: IconButton(
+                  onPressed: () => _previewSample(sample),
+                  icon: const Icon(IconsaxPlusLinear.play),
+                  iconSize: 16,
+                  tooltip: 'Preview',
+                ),
+              ),
+            ],
+          ),
         ),
       );
     });

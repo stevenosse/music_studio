@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:mstudio/src/features/music_studio/ui/widgets/instrument_selection_dialog.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/dimens.dart';
@@ -7,6 +8,25 @@ import '../../logic/music_studio_notifier.dart';
 
 class TrackListWidget extends StatelessWidget {
   const TrackListWidget({super.key});
+
+  Future<void> _showInstrumentDialog(
+      BuildContext context, MusicStudioNotifier notifier, {int? trackIndex}) async {
+    final selectedInstrument = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => InstrumentSelectionDialog(
+        samplePacks: notifier.value.samplePacks,
+        soundfonts: notifier.value.soundfonts,
+      ),
+    );
+
+    if (selectedInstrument != null) {
+      if (trackIndex != null) {
+        notifier.updateTrackInstrument(trackIndex, selectedInstrument);
+      } else {
+        notifier.addTrackFromInstrument(selectedInstrument);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +57,7 @@ class TrackListWidget extends StatelessWidget {
                   ),
                   const Spacer(),
                   IconButton(
-                    onPressed: () => notifier.addTrack(),
+                    onPressed: () => _showInstrumentDialog(context, notifier),
                     icon: const Icon(IconsaxPlusLinear.add),
                     iconSize: 20,
                     constraints: const BoxConstraints(
@@ -110,27 +130,7 @@ class TrackListWidget extends StatelessWidget {
                                   ),
                                 ),
                                 
-                                // Track actions
-                                PopupMenuButton<String>(
-                                  onSelected: (value) => _handleTrackAction(context, notifier, index, value),
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(
-                                      value: 'rename',
-                                      child: Text('Rename'),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text('Delete'),
-                                    ),
-                                  ],
-                                  child: Icon(
-                                    IconsaxPlusLinear.more,
-                                    size: 16,
-                                    color: isSelected 
-                                        ? Theme.of(context).colorScheme.onPrimaryContainer
-                                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                  ),
-                                ),
+
                               ],
                             ),
                             
@@ -140,35 +140,60 @@ class TrackListWidget extends StatelessWidget {
                             Row(
                               children: [
                                 // Mute button
-                                _buildControlButton(
-                                  context: context,
-                                  icon: track.isMuted ? IconsaxPlusLinear.volume_slash : IconsaxPlusLinear.volume_high,
-                                  isActive: track.isMuted,
+                                IconButton(
                                   onPressed: () => notifier.toggleTrackMute(index),
-                                  tooltip: track.isMuted ? 'Unmute' : 'Mute',
-                                ),
-                                
-                                SizedBox(width: Dimens.spacingXSmall),
-                                
-                                // Solo button
-                                _buildControlButton(
-                                  context: context,
-                                  icon: IconsaxPlusLinear.headphone,
-                                  isActive: track.isSolo,
-                                  onPressed: () => notifier.toggleTrackSolo(index),
-                                  tooltip: track.isSolo ? 'Unsolo' : 'Solo',
-                                ),
-                                
-                                const Spacer(),
-                                
-                                // Volume indicator
-                                Text(
-                                  '${(track.volume * 100).toInt()}%',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: isSelected 
-                                        ? Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
-                                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                  icon: Icon(
+                                    track.isMuted
+                                        ? IconsaxPlusBold.volume_slash
+                                        : IconsaxPlusLinear.volume_high,
+                                    color: track.isMuted
+                                        ? Theme.of(context).colorScheme.error
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
                                   ),
+                                  iconSize: 18,
+                                  tooltip: 'Mute',
+                                ),
+
+                                // Solo button
+                                IconButton(
+                                  onPressed: () => notifier.toggleTrackSolo(index),
+                                  icon: Icon(
+                                    track.isSolo
+                                        ? IconsaxPlusBold.headphone
+                                        : IconsaxPlusLinear.headphone,
+                                    color: track.isSolo
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                  ),
+                                  iconSize: 18,
+                                  tooltip: 'Solo',
+                                ),
+
+                                // More options
+                                PopupMenuButton<String>(
+                                  onSelected: (value) {
+                                    if (value == 'change_instrument') {
+                                      _showInstrumentDialog(context, notifier, trackIndex: index);
+                                    } else if (value == 'delete') {
+                                      notifier.removeTrack(index);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(
+                                      value: 'change_instrument',
+                                      child: Text('Change Instrument'),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text('Delete'),
+                                    ),
+                                  ],
+                                  icon: const Icon(IconsaxPlusLinear.more),
+                                  tooltip: 'More options',
                                 ),
                               ],
                             ),
@@ -184,79 +209,5 @@ class TrackListWidget extends StatelessWidget {
         );
       },
     );
-  }
-  
-  Widget _buildControlButton({
-    required BuildContext context,
-    required IconData icon,
-    required bool isActive,
-    required VoidCallback onPressed,
-    required String tooltip,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(Dimens.radiusXSmall),
-        child: Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: isActive 
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(Dimens.radiusXSmall),
-          ),
-          child: Icon(
-            icon,
-            size: 14,
-            color: isActive 
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-          ),
-        ),
-      ),
-    );
-  }
-  
-  void _handleTrackAction(BuildContext context, MusicStudioNotifier notifier, int index, String action) {
-    switch (action) {
-      case 'rename':
-        _showRenameDialog(context, notifier, index);
-        break;
-      case 'delete':
-        notifier.removeTrack(index);
-        break;
-    }
-  }
-  
-  void _showRenameDialog(BuildContext context, MusicStudioNotifier notifier, int index) {
-    final controller = TextEditingController(text: notifier.value.tracks[index].name);
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rename Track'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Track Name',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              notifier.updateTrackName(index, controller.text);
-              Navigator.of(context).pop();
-            },
-            child: const Text('Rename'),
-          ),
-        ],
-      ),
-    );
-  }
+}
 }

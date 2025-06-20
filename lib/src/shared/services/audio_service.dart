@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:collection/collection.dart';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
@@ -67,10 +68,14 @@ class AudioService {
       _trackSamplePaths[trackId] = samplePath;
       _trackSourceTypes[trackId] = sourceType;
 
-      // Create multiple audio players for this track to allow overlapping sounds
-      if (!_audioPlayers.containsKey(trackId)) {
-        _audioPlayers[trackId] = List.generate(4, (_) => AudioPlayer());
-        _playerIndexes[trackId] = 0;
+      if (sourceType == AudioSourceType.soundfont) {
+        await loadSoundfont(samplePath);
+      } else {
+        // Create multiple audio players for this track to allow overlapping sounds
+        if (!_audioPlayers.containsKey(trackId)) {
+          _audioPlayers[trackId] = List.generate(4, (_) => AudioPlayer());
+          _playerIndexes[trackId] = 0;
+        }
       }
 
       debugPrint(
@@ -80,53 +85,62 @@ class AudioService {
     }
   }
 
-  Future<void> playTrackSample(String trackId, {int? pitch, double volume = 1.0}) async {
-    const int defaultBaseMidiNote = 60; // C4 - assuming samples are pitched at C4 by default
-    double playbackRate = 1.0;
+  Future<void> playTrackSample(
+      String trackId, {int? pitch, double volume = 1.0}) async {
+    const int defaultBaseMidiNote = 60; // C4
 
-    if (pitch != null) {
-      playbackRate = math.pow(2, (pitch - defaultBaseMidiNote) / 12.0).toDouble();
-    }
     try {
-      final samplePath = _trackSamplePaths[trackId];
       final sourceType = _trackSourceTypes[trackId];
-      final players = _audioPlayers[trackId];
+      final track = _trackRepository.tracks.firstWhereOrNull((t) => t.id == trackId);
 
-      if (samplePath != null && players != null && sourceType != null) {
-        // Use round-robin to select next available player
-        final currentIndex = _playerIndexes[trackId] ?? 0;
-        final player = players[currentIndex];
-        _playerIndexes[trackId] = (currentIndex + 1) % players.length;
-
-        // Play audio sample based on source type
-        await player.setVolume(volume);
-        await player.setPlaybackRate(playbackRate);
-        switch (sourceType) {
-          case AudioSourceType.asset:
-            await player
-                .play(AssetSource(samplePath.replaceFirst('assets/', '')));
-            break;
-          case AudioSourceType.deviceFile:
-            await player.play(DeviceFileSource(samplePath));
-            break;
-        }
-        debugPrint(
-            'Playing sample $samplePath for track $trackId with volume $volume (player ${currentIndex + 1})');
-      } else { // Something is missing for sample playback OR it's a MIDI track
-        if (samplePath == null) {
-          // This is a track that's intended to be MIDI (or has no sample assigned)
-          AppLogger().debug('No sample path for track $trackId. Playing default MIDI note.');
-          await playNote(defaultBaseMidiNote, (volume * 127).round());
-          debugPrint('Playing MIDI note for track $trackId with volume $volume.'); // Log MIDI play
-        } else {
-          // This means samplePath is NOT null, but players or sourceType is missing for this track in AudioService.
-          // This is an improperly configured sample track within AudioService's state.
-          AppLogger().warning('Track $trackId ($samplePath) has a sample path but is not properly initialized in AudioService (missing players or sourceType). Cannot play sample. Desired rate: $playbackRate, volume: $volume.');
-          // Do not play MIDI as a fallback here, and do not log as if playing MIDI.
-        }
+      if (sourceType == null || track == null) {
+        AppLogger().warning(
+            'Track $trackId has no source type or was not found, cannot be played.');
+        return;
       }
-    } catch (e) {
-      debugPrint('Failed to play track $trackId: $e');
+
+      switch (sourceType) {
+        case AudioSourceType.soundfont:
+          if (pitch != null) {
+            final velocity = (volume * 127).round().clamp(0, 127);
+            await playNote(pitch, velocity);
+          } else {
+            AppLogger().info(
+                'Soundfont track $trackId was triggered on a step with no note.');
+          }
+          break;
+        case AudioSourceType.asset:
+        case AudioSourceType.deviceFile:
+          final samplePath = _trackSamplePaths[trackId];
+          final players = _audioPlayers[trackId];
+
+          if (samplePath == null || players == null) {
+            AppLogger().warning(
+                'Track $trackId ($sourceType) is missing sample path or players.');
+            return;
+          }
+
+          double playbackRate = 1.0;
+          if (pitch != null) {
+            final baseNote = track.baseMidiNoteForSample ?? defaultBaseMidiNote;
+            playbackRate = math.pow(2, (pitch - baseNote) / 12.0).toDouble();
+          }
+
+          final currentIndex = _playerIndexes[trackId] ?? 0;
+          final player = players[currentIndex];
+          _playerIndexes[trackId] = (currentIndex + 1) % players.length;
+
+          await player.setVolume(volume);
+          await player.setPlaybackRate(playbackRate);
+
+          final source = sourceType == AudioSourceType.asset
+              ? AssetSource(samplePath.replaceFirst('assets/', ''))
+              : DeviceFileSource(samplePath);
+          await player.play(source);
+          break;
+      }
+    } catch (e, s) {
+      AppLogger().error('Failed to play track $trackId', e, s);
     }
   }
 

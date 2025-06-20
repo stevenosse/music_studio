@@ -35,63 +35,66 @@ class PianoRollGridPainter extends CustomPainter {
   }
 
   void _drawBackground(Canvas canvas, Size size) {
-    final backgroundPaint = Paint()..color = Colors.grey.shade900;
-    canvas.drawRect(Offset.zero & size, backgroundPaint);
-  }
+    final whiteKeyPaint = Paint()..color = const Color(0xFF303030); // Slightly lighter grey
+    final blackKeyPaint = Paint()..color = const Color(0xFF212121); // Darker grey
 
-  void _drawHorizontalLines(Canvas canvas, Size size) {
-    final paint = Paint();
-    
-    for (int i = 0; i <= totalKeys; i++) {
+    for (int i = 0; i < totalKeys; i++) {
       final y = i * keyHeight;
-      
-      // Determine line color based on note type
       final midiNote = lowestNote + (totalKeys - 1 - i);
       final noteInOctave = midiNote % 12;
       final isBlackKey = [1, 3, 6, 8, 10].contains(noteInOctave);
-      final isOctaveStart = noteInOctave == 0; // C note
-      
-      // Draw background for black keys
-      if (i < totalKeys && isBlackKey) {
-        paint.color = Colors.black.withValues(alpha: 0.3);
-        canvas.drawRect(
-          Rect.fromLTWH(0, y, size.width, keyHeight),
-          paint,
-        );
-      }
-      
-      // Draw horizontal grid lines
+
+      final paint = isBlackKey ? blackKeyPaint : whiteKeyPaint;
+      canvas.drawRect(
+        Rect.fromLTWH(0, y, size.width, keyHeight),
+        paint,
+      );
+    }
+  }
+
+  void _drawHorizontalLines(Canvas canvas, Size size) {
+    final linePaint = Paint()..strokeWidth = 1.0;
+
+    for (int i = 0; i <= totalKeys; i++) {
+      final y = i * keyHeight;
+      final midiNote = lowestNote + (totalKeys - 1 - i);
+      final noteInOctave = midiNote % 12;
+      final isOctaveStart = noteInOctave == 0;
+
       if (isOctaveStart) {
-        paint.color = Colors.white.withValues(alpha: 0.4);
-        paint.strokeWidth = 1.5;
+        linePaint.color = Colors.black.withValues(alpha: 0.35);
       } else {
-        paint.color = Colors.white.withValues(alpha: 0.15);
-        paint.strokeWidth = 0.5;
+        linePaint.color = Colors.black.withValues(alpha: 0.2);
       }
-      
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
     }
   }
 
   void _drawVerticalLines(Canvas canvas, Size size) {
-    final paint = Paint();
-    
+    final barPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.3)
+      ..strokeWidth = 1.5;
+    final beatPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.2)
+      ..strokeWidth = 1.0;
+    final stepPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.1)
+      ..strokeWidth = 1.0;
+
     for (int i = 0; i <= totalSteps; i++) {
       final x = i * cellWidth;
       final isBarStart = i % stepsPerBar == 0;
-      final isBeatStart = i % 4 == 0; // Assuming 4 steps per beat
-      
+      final isBeatStart = i % (stepsPerBar / 4) == 0;
+
+      final Paint paint;
       if (isBarStart) {
-        paint.color = Colors.white.withValues(alpha: 0.6);
-        paint.strokeWidth = 2.0;
+        paint = barPaint;
       } else if (isBeatStart) {
-        paint.color = Colors.white.withValues(alpha: 0.4);
-        paint.strokeWidth = 1.0;
+        paint = beatPaint;
       } else {
-        paint.color = Colors.white.withValues(alpha: 0.2);
-        paint.strokeWidth = 0.5;
+        paint = stepPaint;
       }
-      
+
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
   }

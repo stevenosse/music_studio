@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
+import 'package:mstudio/src/features/music_studio/models/sample_pack.dart';
 
 import '../../../shared/services/audio_service.dart';
 
@@ -29,6 +33,7 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
     _setupAudioListeners();
     _setupTrackRepositoryListeners();
     await _loadDefaultTracks();
+    await _loadInstruments();
   }
 
   void _setupAudioListeners() {
@@ -137,6 +142,15 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
   Future<void> _loadDefaultTracks() async {
     final defaultTracks = [
       Track(
+        id: 'piano',
+        name: 'Piano',
+        color: const Color(0xFF9C27B0), // Purple
+        samplePath: 'assets/soundfonts/Piano.sf2',
+        audioSourceType: AudioSourceType.soundfont,
+        steps:
+            List.generate(32, (index) => const SequencerStep(isActive: false)),
+      ),
+      Track(
         id: 'kick',
         name: 'Kick',
         color: const Color(0xFF2196F3),
@@ -182,6 +196,53 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
     value = value.copyWith(tracks: defaultTracks);
   }
 
+  Future<void> _loadInstruments() async {
+    // Load soundfonts from assets
+    final manifestContent = await rootBundle.loadString('AssetManifest.json');
+    final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+
+    final soundfontPaths = manifestMap.keys
+        .where((String key) => key.startsWith('assets/soundfonts/'))
+        .toList();
+
+    final sampleAssets = manifestMap.keys
+        .where((String key) => key.startsWith('assets/samples/'))
+        .toList();
+
+    final Map<String, List<String>> packsData = {};
+    for (var asset in sampleAssets) {
+      final parts = asset.split('/');
+      if (parts.length > 3) { // assets/samples/PACK_NAME/sample.wav
+        final packName = parts[2];
+        if (!packsData.containsKey(packName)) {
+          packsData[packName] = [];
+        }
+        packsData[packName]!.add(asset);
+      }
+    }
+
+    final samplePacks = packsData.entries.map((entry) {
+      final packName = entry.key;
+      final packPath = 'assets/samples/$packName';
+      final samples = entry.value.map((path) {
+        final fileName = path.split('/').last;
+        return Sample(
+          name: fileName.split('.').first,
+          path: path,
+        );
+      }).toList();
+
+      return SamplePack(
+        id: packName,
+        name: packName,
+        path: packPath,
+        samples: samples,
+      );
+    }).toList();
+
+    value = value.copyWith(soundfonts: soundfontPaths, samplePacks: samplePacks);
+  }
+
   // Transport controls
   void play() {
     _audioService.play();
@@ -204,47 +265,45 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
   }
 
   // Track management
-  void addTrack() {
-    final newTrack = Track(
-      id: 'track_${DateTime.now().millisecondsSinceEpoch}',
-      name: 'Track ${value.tracks.length + 1}',
-      color: const Color(0xFF9C27B0),
-      samplePath: 'audio/samples/kick.wav', // Default sample
-      steps: List.generate(
-          value.stepsPerBar, (index) => const SequencerStep(isActive: false)),
-    );
+  void addTrackFromInstrument(Map<String, dynamic> instrument) {
+    final String name = instrument['name'];
+    final String? path = instrument['path'];
+    final String type = instrument['type'];
 
-    final updatedTracks = [...value.tracks, newTrack];
-    value = value.copyWith(
-      tracks: updatedTracks,
-      hasUnsavedChanges: true,
-    );
-
-    if (newTrack.samplePath != null) {
-      _audioService.loadTrackSample(
-          newTrack.id, newTrack.samplePath!, newTrack.audioSourceType);
+    AudioSourceType audioSourceType;
+    switch (type) {
+      case 'soundfont':
+        audioSourceType = AudioSourceType.soundfont;
+        break;
+      case 'sample':
+        // Assuming samples from assets are treated as device files for now
+        audioSourceType = AudioSourceType.deviceFile;
+        break;
+      default: // 'synth' or other types
+        audioSourceType = AudioSourceType.asset; // Placeholder for synth
     }
-  }
 
-  void addTrackWithSample(String name, String samplePath) {
     final colors = [
+      const Color(0xFFF44336),
       const Color(0xFF2196F3),
-      const Color(0xFFFF5722),
       const Color(0xFF4CAF50),
+      const Color(0xFFFFEB3B),
       const Color(0xFF9C27B0),
       const Color(0xFFFF9800),
-      const Color(0xFFF44336),
       const Color(0xFF00BCD4),
       const Color(0xFF8BC34A),
     ];
 
+    final int? baseMidiNote = instrument['baseMidiNote'];
+
     final newTrack = Track(
-      id: 'track_${DateTime.now().millisecondsSinceEpoch}',
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       color: colors[value.tracks.length % colors.length],
-      samplePath: samplePath,
-      steps: List.generate(
-          value.stepsPerBar, (index) => const SequencerStep(isActive: false)),
+      steps: List.generate(16, (_) => const SequencerStep(isActive: false)),
+      samplePath: path,
+      audioSourceType: audioSourceType,
+      baseMidiNoteForSample: baseMidiNote,
     );
 
     final updatedTracks = [...value.tracks, newTrack];
@@ -253,8 +312,56 @@ class MusicStudioNotifier extends ValueNotifier<MusicStudioState> {
       hasUnsavedChanges: true,
     );
 
-    _audioService.loadTrackSample(
-        newTrack.id, samplePath, AudioSourceType.deviceFile);
+    if (path != null) {
+      _audioService.loadTrackSample(newTrack.id, path, audioSourceType);
+    }
+  }
+
+  void addTrackWithSample(String name, String samplePath) {
+    final instrument = {
+      'name': name,
+      'path': samplePath,
+      'type': 'sample',
+    };
+    addTrackFromInstrument(instrument);
+  }
+
+  void updateTrackInstrument(int index, Map<String, dynamic> instrument) {
+    if (index < 0 || index >= value.tracks.length) return;
+
+    final String? path = instrument['path'];
+    final String type = instrument['type'];
+
+    AudioSourceType audioSourceType;
+    switch (type) {
+      case 'soundfont':
+        audioSourceType = AudioSourceType.soundfont;
+        break;
+      case 'sample':
+        audioSourceType = AudioSourceType.deviceFile;
+        break;
+      default: // 'synth' or other types
+        audioSourceType = AudioSourceType.asset; // Placeholder
+    }
+
+    final int? baseMidiNote = instrument['baseMidiNote'];
+
+    final updatedTracks = [...value.tracks];
+    final oldTrack = updatedTracks[index];
+    updatedTracks[index] = oldTrack.copyWith(
+      samplePath: path,
+      audioSourceType: audioSourceType,
+      baseMidiNoteForSample: baseMidiNote,
+    );
+
+    value = value.copyWith(
+      tracks: updatedTracks,
+      hasUnsavedChanges: true,
+    );
+
+    if (path != null) {
+      _audioService.loadTrackSample(oldTrack.id, path, audioSourceType);
+    }
   }
 
   void removeTrack(int index) {
